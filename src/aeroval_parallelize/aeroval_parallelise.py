@@ -32,7 +32,7 @@ USER = getuser()
 TMP_DIR = "/tmp"
 # TMP_DIR = f"/home/{USER}/data/aeroval-local-web/data"
 
-JSON_RUNSCRIPT_NAME = "aeroval_run_json_cfg.py"
+JSON_RUNSCRIPT_NAME = "aeroval_run_json_cfg"
 # qsub binary
 QSUB_NAME = "/usr/bin/qsub"
 # qsub submission host
@@ -465,7 +465,7 @@ def run_queue(
                 else:
                     print("success...")
 
-                host_str = f"{sub_user}@{qsub_host}"
+                host_str = f"{qsub_user}@{qsub_host}"
                 cmd_arr = ["/usr/bin/bash", "-l", remote_qsub_start_file_name]
                 print(f"running command {' '.join(map(str, cmd_arr))}...")
                 sh_result = subprocess.run(cmd_arr, capture_output=True)
@@ -678,7 +678,7 @@ def read_config_var(config_file: str, cfgvar: str) -> dict:
         cfg = deepcopy(getattr(foo, cfgvar))
 
     elif fnmatch(config_file, "*.json"):
-        with open(infile, "r") as inhandle:
+        with open(config_file, "r") as inhandle:
             cfg = json.load(inhandle)
     else:
         msg = f"""Error: {config_file} has to be either a Python file or a json file.
