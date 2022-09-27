@@ -32,5 +32,4 @@ dependencies = [
 "Bug Tracker" = "https://github.com/metno/pyaerocom-parallelization/issues"
 
 [project.scripts]
-aeroval_parallelize = "aeroval_parallelize:aeroval_parallelise:main"
-pya_test = "aeroval_parallelize:aeroval_parallelise:main"
+aeroval_parallelize = "aeroval_parallelize.aeroval_parallelise:main"
