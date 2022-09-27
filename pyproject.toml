@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyaerocom_parallelization"
-version = "0.0.2"
+version = "0.0.4"
 authors = [{ name = "MET Norway" }]
 description = "run pyaerocom aeroval tasks in parallel on the Met Norway PPI infrastructure"
 readme = "README.md"
@@ -31,3 +31,6 @@ dependencies = [
 "Homepage" = "https://github.com/metno/pyaerocom-parallelization"
 "Bug Tracker" = "https://github.com/metno/pyaerocom-parallelization/issues"
 
+[project.scripts]
+aeroval_parallelize = "aeroval_parallelize:aeroval_parallelise:main"
+pya_test = "aeroval_parallelize:aeroval_parallelise:main"
