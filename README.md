@@ -1,6 +1,18 @@
 # pyaerocom-parallelization
 project to run pyaerocom aeroval tasks in parallel on the Met Norway PPI infrastructure
 
+## general concept
+
+- aeroval config files can be run in parallel by running all models and all observation networks
+in parallel. For the observation networks that works unfortunately only if they are not combined
+from other obs networks (aeroval limitation)
+- aeroval config files can be located either on PPI or on local machines. In the latter case, 
+all necessary files are copied to the GridEngine submit host and submitted from there
+- The whole parallelisation happens in three steps:
+  1. submit aeroval config file in parallel
+  2. assemble the json files (after all jobs have finished)
+  3. adjust variable and model order
+
 ## minimal documentation:
 
 
