@@ -7,6 +7,7 @@ parallelisation for aeroval processing
 - submit these configs to the GridEngine queue
 
 """
+from __future__ import annotations
 
 # some ideas what to use
 import argparse
@@ -20,7 +21,6 @@ from pathlib import Path
 from socket import gethostname
 from tempfile import mkdtemp
 from threading import Thread
-from typing import Union
 from uuid import uuid4
 
 import simplejson as json
@@ -168,9 +168,7 @@ def prep_files(options):
                         "coldata_basedir"
                     ] = f"{cfg['coldata_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
                     cfg_file = Path(_file).stem
-                    outfile = Path(tempdir).joinpath(
-                        f"{cfg_file}_{_model}_{_obs_network}.json"
-                    )
+                    outfile = Path(tempdir).joinpath(f"{cfg_file}_{_model}_{_obs_network}.json")
                     print(f"writing file {outfile}")
                     with open(outfile, "w", encoding="utf-8") as j:
                         json.dump(out_cfg, j, ensure_ascii=False, indent=4)
@@ -189,9 +187,7 @@ def prep_files(options):
                     "coldata_basedir"
                 ] = f"{cfg['coldata_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
                 cfg_file = Path(_file).stem
-                outfile = Path(tempdir).joinpath(
-                    f"{cfg_file}_{_model}_{_obs_network}.json"
-                )
+                outfile = Path(tempdir).joinpath(f"{cfg_file}_{_model}_{_obs_network}.json")
                 print(f"writing file {outfile}")
                 with open(outfile, "w", encoding="utf-8") as j:
                     json.dump(out_cfg, j, ensure_ascii=False, indent=4)
@@ -250,9 +246,7 @@ def get_runfile_str_arr(
 
     runfile_arr.append(f"logdir='{logdir}/'")
     runfile_arr.append(f"date={date}")
-    runfile_arr.append(
-        'logfile="${logdir}/${USER}.${date}.${JOB_NAME}.${JOB_ID}_log.txt"'
-    )
+    runfile_arr.append('logfile="${logdir}/${USER}.${date}.${JOB_NAME}.${JOB_ID}_log.txt"')
     runfile_arr.append(
         "__conda_setup=\"$('/modules/centos7/user-apps/aerocom/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)\""
     )
@@ -275,9 +269,7 @@ def get_runfile_str_arr(
     runfile_arr.append("set -x")
     runfile_arr.append("python --version >> ${logfile} 2>&1")
     runfile_arr.append("pwd >> ${logfile} 2>&1")
-    runfile_arr.append(
-        'echo "starting FILE ..." >> ${logfile}'.replace("FILE", str(file))
-    )
+    runfile_arr.append('echo "starting FILE ..." >> ${logfile}'.replace("FILE", str(file)))
     runfile_arr.append(
         "JSON_RUNSCRIPT FILE >> ${logfile} 2>&1".replace(
             "JSON_RUNSCRIPT", str(JSON_RUNSCRIPT)
@@ -335,9 +327,7 @@ def run_queue(
                 print("success...")
             # create qsub runfile and copy that to the qsub host
             qsub_run_file_name = _file.with_name(f"{_file.stem}{'.run'}")
-            remote_qsub_run_file_name = Path.joinpath(
-                qsub_tmp_dir, qsub_run_file_name.name
-            )
+            remote_qsub_run_file_name = Path.joinpath(qsub_tmp_dir, qsub_run_file_name.name)
             remote_json_file = Path.joinpath(qsub_tmp_dir, _file.name)
             dummy_arr = get_runfile_str_arr(
                 remote_json_file, wd=qsub_tmp_dir, script_name=remote_qsub_run_file_name
@@ -361,12 +351,8 @@ def run_queue(
             # create a script with the qsub call and start that
             host_str = f"{qsub_user}@{qsub_host}:{qsub_tmp_dir}/"
             qsub_start_file_name = _file.with_name(f"{_file.stem}{'.sh'}")
-            remote_qsub_run_file_name = Path.joinpath(
-                qsub_tmp_dir, qsub_run_file_name.name
-            )
-            remote_qsub_start_file_name = Path.joinpath(
-                qsub_tmp_dir, qsub_start_file_name.name
-            )
+            remote_qsub_run_file_name = Path.joinpath(qsub_tmp_dir, qsub_run_file_name.name)
+            remote_qsub_start_file_name = Path.joinpath(qsub_tmp_dir, qsub_start_file_name.name)
             # this does not work:
             # cmd_arr = ["ssh", host_str, "/usr/bin/bash", "-l", "qsub", remote_qsub_run_file_name]
             # use bash script as workaround
@@ -434,9 +420,7 @@ def run_queue(
                 print("success...")
             # create qsub runfile and copy that to cluster readable location
             qsub_run_file_name = _file.with_name(f"{_file.stem}{'.run'}")
-            remote_qsub_run_file_name = Path.joinpath(
-                qsub_tmp_dir, qsub_run_file_name.name
-            )
+            remote_qsub_run_file_name = Path.joinpath(qsub_tmp_dir, qsub_run_file_name.name)
             remote_json_file = Path.joinpath(qsub_tmp_dir, _file.name)
             dummy_arr = get_runfile_str_arr(
                 remote_json_file, wd=qsub_tmp_dir, script_name=remote_qsub_run_file_name
@@ -460,12 +444,8 @@ def run_queue(
             # create a script with the qsub call and start that
             host_str = f"{qsub_tmp_dir}/"
             qsub_start_file_name = _file.with_name(f"{_file.stem}{'.sh'}")
-            remote_qsub_run_file_name = Path.joinpath(
-                qsub_tmp_dir, qsub_run_file_name.name
-            )
-            remote_qsub_start_file_name = Path.joinpath(
-                qsub_tmp_dir, qsub_start_file_name.name
-            )
+            remote_qsub_run_file_name = Path.joinpath(qsub_tmp_dir, qsub_run_file_name.name)
+            remote_qsub_start_file_name = Path.joinpath(qsub_tmp_dir, qsub_start_file_name.name)
             # this does not work:
             # cmd_arr = ["ssh", host_str, "/usr/bin/bash", "-l", "qsub", remote_qsub_run_file_name]
             # use bash script as workaround
@@ -498,9 +478,7 @@ def run_queue(
 
             else:
                 print(f"qsub files created on localhost.")
-                print(
-                    f"you can start the job with the command: qsub {remote_qsub_run_file_name}."
-                )
+                print(f"you can start the job with the command: qsub {remote_qsub_run_file_name}.")
 
 
 def combine_output(options: dict):
@@ -531,9 +509,7 @@ def combine_output(options: dict):
             for dir_idx, dir in enumerate(Path(combinedir).iterdir()):
                 # there should be just one directory. Use the 1st only anyway
                 if dir_idx == 0:
-                    exp_dir = [child for child in dir.iterdir() if Path.is_dir(child)][
-                        0
-                    ]
+                    exp_dir = [child for child in dir.iterdir() if Path.is_dir(child)][0]
 
                     shutil.copytree(dir, options["outdir"], dirs_exist_ok=True)
                     out_target_dir = Path.joinpath(options["outdir"], exp_dir.name)
@@ -575,9 +551,7 @@ def combine_output(options: dict):
                 elif match_file(cmp_file, MERGE_EXP_CFG_FILES):
                     # special treatment for the experiment configuration
                     # file names need to be adjusted
-                    cfg_file = inpath.joinpath(
-                        f"cfg_{inpath.parts[-2]}_{inpath.parts[-1]}.json"
-                    )
+                    cfg_file = inpath.joinpath(f"cfg_{inpath.parts[-2]}_{inpath.parts[-1]}.json")
                     outfile = out_target_dir.joinpath(
                         f"cfg_{options['outdir'].parts[-1]}_{inpath.parts[-1]}.json"
                     )
@@ -650,7 +624,7 @@ def combine_json_files(infiles: list[str], outfile: str) -> dict:
         json.dump(result, outhandle, ensure_ascii=False, indent=4)
 
 
-def dict_merge(dct: Union[None, dict], merge_dct: dict):
+def dict_merge(dct: dict | None, merge_dct: dict):
     """Recursive dict merge. Inspired by :meth:``dict.update()``, instead of
     updating only top-level keys, dict_merge recurses down into dicts nested
     to an arbitrary depth, updating keys. The ``merge_dct`` is merged into
@@ -674,9 +648,7 @@ def dict_merge(dct: Union[None, dict], merge_dct: dict):
     return dct
 
 
-def match_file(
-    file: str, file_mask_array: Union[str, list[str]] = MERGE_EXP_FILES_TO_COMBINE
-) -> bool:
+def match_file(file: str, file_mask_array: str | list[str] = MERGE_EXP_FILES_TO_COMBINE) -> bool:
     """small helper that matches a filename against a list if wildcards"""
     if isinstance(file_mask_array, str):
         file_mask_array = [file_mask_array]
@@ -742,15 +714,13 @@ def adjust_menujson(
                 current_obs_order_dict = deepcopy(
                     menu_json_out_dict[_var]["obs"][obs_networks_present][obs_vert_type]
                 )
-                menu_json_out_dict[_var]["obs"][obs_networks_present][
-                    obs_vert_type
-                ] = {}
+                menu_json_out_dict[_var]["obs"][obs_networks_present][obs_vert_type] = {}
                 for _model in cfg["model_cfg"]:
                     # not all the model necessaryly provide all variables
                     try:
-                        menu_json_out_dict[_var]["obs"][obs_networks_present][
-                            obs_vert_type
-                        ][_model] = current_obs_order_dict[_model]
+                        menu_json_out_dict[_var]["obs"][obs_networks_present][obs_vert_type][
+                            _model
+                        ] = current_obs_order_dict[_model]
                     except KeyError:
                         pass
 
@@ -760,7 +730,7 @@ def adjust_menujson(
 
 
 def adjust_heatmapfile(
-    heatmap_files: list[Union[str, Path]],
+    heatmap_files: list[str | Path],
     cfg: dict = None,
     config_file: str = None,
     cfgvar: str = None,
@@ -812,7 +782,7 @@ def adjust_heatmapfile(
 
 
 def adjust_hm_ts_file(
-    ts_files: list[Union[str, Path]],
+    ts_files: list[str | Path],
     cfg: dict = None,
     config_file: str = None,
     cfgvar: str = None,
@@ -864,7 +834,7 @@ def adjust_hm_ts_file(
 def main():
     """main program"""
 
-    #define some terminal colors to be used in the help
+    # define some terminal colors to be used in the help
     colors = {
         "BOLD": "\033[1m",
         "UNDERLINE": "\033[4m",
@@ -910,9 +880,7 @@ def main():
         help="file(s) to read, directories to combine (if -c switch is used)",
         nargs="+",
     )
-    parser.add_argument(
-        "-v", "--verbose", help="switch on verbosity", action="store_true"
-    )
+    parser.add_argument("-v", "--verbose", help="switch on verbosity", action="store_true")
 
     parser.add_argument(
         "-e",
@@ -975,9 +943,7 @@ def main():
     group_assembly = parser.add_argument_group(
         "data assembly:", "options for assembly of parallisations output"
     )
-    group_assembly.add_argument(
-        "-o", "--outdir", help="output directory for experiment assembly"
-    )
+    group_assembly.add_argument("-o", "--outdir", help="output directory for experiment assembly")
     group_assembly.add_argument(
         "-c",
         "--combinedirs",
