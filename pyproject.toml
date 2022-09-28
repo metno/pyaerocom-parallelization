@@ -21,10 +21,11 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Atmospheric Science",
 ]
 requires-python = ">=3.8"
+dependencies = ["simplejson"]
 
-dependencies = [
-    "pyaerocom",
-]
+[project.optional-dependencies]
+proj-legacy = ["pyaerocom[proj-legacy]"]
+proj8 = ["pyaerocom[proj8]"]
 
 [project.urls]
 "Homepage" = "https://github.com/metno/pyaerocom-parallelization"
