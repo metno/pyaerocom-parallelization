@@ -7,6 +7,7 @@ parallelisation for aeroval processing
 - submit these configs to the GridEngine queue
 
 """
+from __future__ import annotations
 
 # some ideas what to use
 import argparse
@@ -20,7 +21,6 @@ from pathlib import Path
 from socket import gethostname
 from tempfile import mkdtemp
 from threading import Thread
-from typing import Union
 from uuid import uuid4
 
 import simplejson as json
@@ -624,7 +624,7 @@ def combine_json_files(infiles: list[str], outfile: str) -> dict:
         json.dump(result, outhandle, ensure_ascii=False, indent=4)
 
 
-def dict_merge(dct: Union[None, dict], merge_dct: dict):
+def dict_merge(dct: dict | None, merge_dct: dict):
     """Recursive dict merge. Inspired by :meth:``dict.update()``, instead of
     updating only top-level keys, dict_merge recurses down into dicts nested
     to an arbitrary depth, updating keys. The ``merge_dct`` is merged into
@@ -648,9 +648,7 @@ def dict_merge(dct: Union[None, dict], merge_dct: dict):
     return dct
 
 
-def match_file(
-    file: str, file_mask_array: Union[str, list[str]] = MERGE_EXP_FILES_TO_COMBINE
-) -> bool:
+def match_file(file: str, file_mask_array: str | list[str] = MERGE_EXP_FILES_TO_COMBINE) -> bool:
     """small helper that matches a filename against a list if wildcards"""
     if isinstance(file_mask_array, str):
         file_mask_array = [file_mask_array]
@@ -732,7 +730,7 @@ def adjust_menujson(
 
 
 def adjust_heatmapfile(
-    heatmap_files: list[Union[str, Path]],
+    heatmap_files: list[str | Path],
     cfg: dict = None,
     config_file: str = None,
     cfgvar: str = None,
@@ -784,7 +782,7 @@ def adjust_heatmapfile(
 
 
 def adjust_hm_ts_file(
-    ts_files: list[Union[str, Path]],
+    ts_files: list[str | Path],
     cfg: dict = None,
     config_file: str = None,
     cfgvar: str = None,

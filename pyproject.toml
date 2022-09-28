@@ -56,6 +56,10 @@ pretty = true
 sqlite_cache = true
 #exclude = "pyaerocom-tutorials|_build"
 
+[[tool.mypy.overrides]]
+module = ["pyaorocom.*"]
+warn_unused_ignores = false
+
 [tool.tox]
 legacy_tox_ini = """
 [tox]
