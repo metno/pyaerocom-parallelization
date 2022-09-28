@@ -44,19 +44,6 @@ profile = "black"
 src_paths = ["src", "tests"]
 line_length = 99
 
-[tool.mypy]
-python_version = "3.8"
-warn_unused_configs = true
-warn_unused_ignores = true
-warn_no_return = true
-warn_return_any = false
-warn_unreachable = true
-show_error_codes = true
-pretty = true
-sqlite_cache = true
-exclude = "_build"
-
-
 [tool.tox]
 legacy_tox_ini = """
 
@@ -64,7 +51,5 @@ legacy_tox_ini = """
 envlist = py38, py39, py310, format, lint, docs
 skip_missing_interpreters = True
 isolated_build = True
-requires =
-    setuptools<=60.9.3
 
 """
