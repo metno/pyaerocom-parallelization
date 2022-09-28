@@ -220,63 +220,47 @@ def get_runfile_str_arr(
     elif isinstance(script_name, Path):
         script_name = str(script_name)
 
-    runfile_arr = []
-    runfile_arr.append("#!/bin/bash -l")
-    runfile_arr.append("#$ -S /bin/bash")
-    # runfile_arr.append("#$ -N AEROVAL_NAME")
-    runfile_arr.append(f"#$ -N {Path(file).stem}")
-    # runfile_arr.append("#$ -q research-el7.q")
-    runfile_arr.append(f"#$ -q {queue_name}")
-    runfile_arr.append("#$ -pe shmem-1 1")
-    # runfile_arr.append("#$ -wd /home/UUSER/data/aeroval-local-web/pyaerocom_config/config_files")
-    runfile_arr.append(f"#$ -wd {wd}")
-    runfile_arr.append("#$ -l h_rt=96:00:00")
-    runfile_arr.append("#$ -l s_rt=96:00:00")
-    # runfile_arr.append("#$ -M UUSER@met.no")
+
+    runfile_str = f"""#!/bin/bash -l
+#$ -S /bin/bash
+#$ -N {Path(file).stem}
+#$ -q {queue_name}
+#$ -pe shmem-1 1
+#$ -wd {wd}
+#$ -l h_rt=96:00:00
+#$ -l s_rt=96:00:00
+"""
     if mail is not None:
-        runfile_arr.append(f"#$ -M {mail}")
-    runfile_arr.append("#$ -m abe")
-    runfile_arr.append("#$ -l h_vmem=20G")
-    runfile_arr.append("#$ -shell y")
-    runfile_arr.append("#$ -j y")
-    # runfile_arr.append("#$ -o /lustre/storeA/project/aerocom/logs/aeroval_logs/")
-    # runfile_arr.append("#$ -e /lustre/storeA/project/aerocom/logs/aeroval_logs/")
-    runfile_arr.append(f"#$ -o {logdir}/")
-    runfile_arr.append(f"#$ -e {logdir}/")
+        runfile_str += f"#$ -M {mail}\n"
+    runfile_str += f"""#$ -m abe
+#$ -l h_vmem=20G
+#$ -shell y
+#$ -j y
+#$ -o {logdir}/
+#$ -e {logdir}/
+logdir="{logdir}/"
+date="{date}"
+logfile="${{logdir}}/${{USER}}.${{date}}.${{JOB_NAME}}.${{JOB_ID}}_log.txt"
+__conda_setup=$('/modules/centos7/user-apps/aerocom/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)
+if [ $? -eq 0 ]
+then eval "$__conda_setup"
+else
+  echo conda not working! exiting...
+  exit 1
+fi
+echo "Got $NSLOTS slots for job $SGE_TASK_ID." >> ${{logfile}}
+module load aerocom/anaconda3-stable >> ${{logfile}} 2>&1
+module list >> ${{logfile}} 2>&1
+conda activate {conda_env} >> ${{logfile}} 2>&1
+conda env list >> ${{logfile}} 2>&1
+set -x
+python --version >> ${{logfile}} 2>&1
+pwd >> ${{logfile}} 2>&1
+echo "starting {file} ..." >> ${{logfile}}
+{str(JSON_RUNSCRIPT)} {str(file)} >> ${{logfile}} 2>&1
 
-    runfile_arr.append(f"logdir='{logdir}/'")
-    runfile_arr.append(f"date={date}")
-    runfile_arr.append('logfile="${logdir}/${USER}.${date}.${JOB_NAME}.${JOB_ID}_log.txt"')
-    runfile_arr.append(
-        "__conda_setup=\"$('/modules/centos7/user-apps/aerocom/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)\""
-    )
-
-    runfile_arr.append("if [ $? -eq 0 ]")
-    runfile_arr.append('  then eval "$__conda_setup"')
-    runfile_arr.append("else")
-    runfile_arr.append("  echo conda not working! exiting...")
-    runfile_arr.append("  exit 1")
-    runfile_arr.append("fi")
-
-    runfile_arr.append('echo "Got $NSLOTS slots for job $SGE_TASK_ID." >> ${logfile}')
-
-    runfile_arr.append("module load aerocom/anaconda3-stable >> ${logfile} 2>&1")
-    runfile_arr.append("module list >> ${logfile} 2>&1")
-
-    runfile_arr.append(f"conda activate {conda_env} >> ${{logfile}} 2>&1")
-    runfile_arr.append("conda env list >> ${logfile} 2>&1")
-
-    runfile_arr.append("set -x")
-    runfile_arr.append("python --version >> ${logfile} 2>&1")
-    runfile_arr.append("pwd >> ${logfile} 2>&1")
-    runfile_arr.append('echo "starting FILE ..." >> ${logfile}'.replace("FILE", str(file)))
-    runfile_arr.append(
-        "JSON_RUNSCRIPT FILE >> ${logfile} 2>&1".replace(
-            "JSON_RUNSCRIPT", str(JSON_RUNSCRIPT)
-        ).replace("FILE", str(file))
-    )
-    runfile_arr.append("")
-    return runfile_arr
+"""
+    return runfile_str
 
 
 def run_queue(
@@ -329,12 +313,12 @@ def run_queue(
             qsub_run_file_name = _file.with_name(f"{_file.stem}{'.run'}")
             remote_qsub_run_file_name = Path.joinpath(qsub_tmp_dir, qsub_run_file_name.name)
             remote_json_file = Path.joinpath(qsub_tmp_dir, _file.name)
-            dummy_arr = get_runfile_str_arr(
+            dummy_str = get_runfile_str(
                 remote_json_file, wd=qsub_tmp_dir, script_name=remote_qsub_run_file_name
             )
             print(f"writing file {qsub_run_file_name}")
             with open(qsub_run_file_name, "w") as f:
-                f.write("\n".join(dummy_arr))
+                f.write(dummy_str)
 
             # copy runfile to qsub host
             host_str = f"{qsub_user}@{qsub_host}:{qsub_tmp_dir}/"
@@ -356,12 +340,12 @@ def run_queue(
             # this does not work:
             # cmd_arr = ["ssh", host_str, "/usr/bin/bash", "-l", "qsub", remote_qsub_run_file_name]
             # use bash script as workaround
-            start_script_arr = []
-            start_script_arr.append("#!/bin/bash -l")
-            start_script_arr.append(f"qsub {remote_qsub_run_file_name}")
-            start_script_arr.append("")
+            start_script_str = f"""#!/bin/bash -l
+qsub {remote_qsub_run_file_name}
+
+"""
             with open(qsub_start_file_name, "w") as f:
-                f.write("\n".join(start_script_arr))
+                f.write(start_script_str)
             cmd_arr = [*REMOTE_CP_COMMAND, qsub_start_file_name, host_str]
             if submit_flag:
                 print(f"running command {' '.join(map(str, cmd_arr))}...")
@@ -422,12 +406,12 @@ def run_queue(
             qsub_run_file_name = _file.with_name(f"{_file.stem}{'.run'}")
             remote_qsub_run_file_name = Path.joinpath(qsub_tmp_dir, qsub_run_file_name.name)
             remote_json_file = Path.joinpath(qsub_tmp_dir, _file.name)
-            dummy_arr = get_runfile_str_arr(
+            dummy_str = get_runfile_str(
                 remote_json_file, wd=qsub_tmp_dir, script_name=remote_qsub_run_file_name
             )
             print(f"writing file {qsub_run_file_name}")
             with open(qsub_run_file_name, "w") as f:
-                f.write("\n".join(dummy_arr))
+                f.write(dummy_str)
 
             # copy runfile to cluster readable location
             host_str = f"{qsub_tmp_dir}/"
@@ -449,12 +433,12 @@ def run_queue(
             # this does not work:
             # cmd_arr = ["ssh", host_str, "/usr/bin/bash", "-l", "qsub", remote_qsub_run_file_name]
             # use bash script as workaround
-            start_script_arr = []
-            start_script_arr.append("#!/bin/bash -l")
-            start_script_arr.append(f"qsub {remote_qsub_run_file_name}")
-            start_script_arr.append("")
+            start_script_str = f"""#!/bin/bash -l
+qsub {remote_qsub_run_file_name}
+
+"""
             with open(qsub_start_file_name, "w") as f:
-                f.write("\n".join(start_script_arr))
+                f.write(start_script_str)
             cmd_arr = [*CP_COMMAND, qsub_start_file_name, host_str]
             if submit_flag:
                 print(f"running command {' '.join(map(str, cmd_arr))}...")
@@ -735,12 +719,12 @@ def adjust_heatmapfile(
     config_file: str = None,
     cfgvar: str = None,
 ) -> None:
-    """helper to adjust the heatmal files (files matching AEROVAL_HEATMAP_FILES_MASK)
+    """helper to adjust the heatmap files (files matching AEROVAL_HEATMAP_FILES_MASK)
     according to a given aeroval config file"""
 
     # load aeroval config file
-    # load menu.json
-    # adjust menu.json
+    # load file
+    # adjust adjust it
 
     if cfg is None:
         cfg = read_config_var(config_file, cfgvar)
