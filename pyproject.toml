@@ -52,4 +52,9 @@ envlist = py38, py39, py310, format, lint, docs
 skip_missing_interpreters = True
 isolated_build = True
 
+[testenv:format]
+commands =
+    pre-commit run --all-files --show-diff-on-failure
+deps =
+    pre-commit
 """
