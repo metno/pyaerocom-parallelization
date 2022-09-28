@@ -12,6 +12,8 @@ all necessary files are copied to the GridEngine submit host and submitted from 
   1. submit aeroval config file in parallel
   2. assemble the json files (after all jobs have finished)
   3. adjust variable and model order
+- runtime environment is defined via a conda environment in the `aerocom/anaconda3-stable` module 
+(named `pyadev-applied` by default )
 
 ## minimal documentation:
 

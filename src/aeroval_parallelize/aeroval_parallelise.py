@@ -168,7 +168,9 @@ def prep_files(options):
                         "coldata_basedir"
                     ] = f"{cfg['coldata_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
                     cfg_file = Path(_file).stem
-                    outfile = Path(tempdir).joinpath(f"{cfg_file}_{_model}_{_obs_network}.json")
+                    outfile = Path(tempdir).joinpath(
+                        f"{cfg_file}_{_model}_{_obs_network}.json"
+                    )
                     print(f"writing file {outfile}")
                     with open(outfile, "w", encoding="utf-8") as j:
                         json.dump(out_cfg, j, ensure_ascii=False, indent=4)
@@ -187,7 +189,9 @@ def prep_files(options):
                     "coldata_basedir"
                 ] = f"{cfg['coldata_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
                 cfg_file = Path(_file).stem
-                outfile = Path(tempdir).joinpath(f"{cfg_file}_{_model}_{_obs_network}.json")
+                outfile = Path(tempdir).joinpath(
+                    f"{cfg_file}_{_model}_{_obs_network}.json"
+                )
                 print(f"writing file {outfile}")
                 with open(outfile, "w", encoding="utf-8") as j:
                     json.dump(out_cfg, j, ensure_ascii=False, indent=4)
@@ -200,15 +204,14 @@ def prep_files(options):
 
 
 def get_runfile_str_arr(
-        file,
-        queue_name=QSUB_QUEUE_NAME,
-        script_name=None,
-        # wd=QSUB_DIR,
-        wd=None,
-        mail=f"{QSUB_USER}@met.no",
-        logdir=QSUB_LOG_DIR,
-        date=START_TIME,
-        conda_env="pyadev-applied",
+    file,
+    queue_name=QSUB_QUEUE_NAME,
+    script_name=None,
+    wd=None,
+    mail=f"{QSUB_USER}@met.no",
+    logdir=QSUB_LOG_DIR,
+    date=START_TIME,
+    conda_env=CONDA_ENV,
 ):
     """create list of strings with runfile for gridengine"""
     # create runfile
@@ -247,7 +250,9 @@ def get_runfile_str_arr(
 
     runfile_arr.append(f"logdir='{logdir}/'")
     runfile_arr.append(f"date={date}")
-    runfile_arr.append('logfile="${logdir}/${USER}.${date}.${JOB_NAME}.${JOB_ID}_log.txt"')
+    runfile_arr.append(
+        'logfile="${logdir}/${USER}.${date}.${JOB_NAME}.${JOB_ID}_log.txt"'
+    )
     runfile_arr.append(
         "__conda_setup=\"$('/modules/centos7/user-apps/aerocom/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)\""
     )
@@ -270,7 +275,9 @@ def get_runfile_str_arr(
     runfile_arr.append("set -x")
     runfile_arr.append("python --version >> ${logfile} 2>&1")
     runfile_arr.append("pwd >> ${logfile} 2>&1")
-    runfile_arr.append('echo "starting FILE ..." >> ${logfile}'.replace("FILE", str(file)))
+    runfile_arr.append(
+        'echo "starting FILE ..." >> ${logfile}'.replace("FILE", str(file))
+    )
     runfile_arr.append(
         "JSON_RUNSCRIPT FILE >> ${logfile} 2>&1".replace(
             "JSON_RUNSCRIPT", str(JSON_RUNSCRIPT)
@@ -281,14 +288,14 @@ def get_runfile_str_arr(
 
 
 def run_queue(
-        runfiles: list[str],
-        qsub_host: str = QSUB_HOST,
-        qsub_cmd: str = QSUB_NAME,
-        qsub_dir: str = QSUB_DIR,
-        qsub_user: str = QSUB_USER,
-        qsub_queue: str = QSUB_QUEUE_NAME,
-        submit_flag: bool = False,
-        options: dict = {},
+    runfiles: list[str],
+    qsub_host: str = QSUB_HOST,
+    qsub_cmd: str = QSUB_NAME,
+    qsub_dir: str = QSUB_DIR,
+    qsub_user: str = QSUB_USER,
+    qsub_queue: str = QSUB_QUEUE_NAME,
+    submit_flag: bool = False,
+    options: dict = {},
 ):
     """submit runfiles to the remote cluster
 
@@ -299,14 +306,9 @@ def run_queue(
 
     """
 
-    # to enable test usage, import fabric only here
     import subprocess
 
     qsub_tmp_dir = Path.joinpath(Path(qsub_dir), f"qsub.{runfiles[0].parts[-2]}")
-
-    # localhost_flag = False
-    # if "localhost" in qsub_host or platform.node() in qsub_host:
-    #     localhost_flag = True
 
     for idx, _file in enumerate(runfiles):
         # copy runfiles to qsub host if qsub host is not localhost
@@ -333,7 +335,9 @@ def run_queue(
                 print("success...")
             # create qsub runfile and copy that to the qsub host
             qsub_run_file_name = _file.with_name(f"{_file.stem}{'.run'}")
-            remote_qsub_run_file_name = Path.joinpath(qsub_tmp_dir, qsub_run_file_name.name)
+            remote_qsub_run_file_name = Path.joinpath(
+                qsub_tmp_dir, qsub_run_file_name.name
+            )
             remote_json_file = Path.joinpath(qsub_tmp_dir, _file.name)
             dummy_arr = get_runfile_str_arr(
                 remote_json_file, wd=qsub_tmp_dir, script_name=remote_qsub_run_file_name
@@ -357,8 +361,12 @@ def run_queue(
             # create a script with the qsub call and start that
             host_str = f"{qsub_user}@{qsub_host}:{qsub_tmp_dir}/"
             qsub_start_file_name = _file.with_name(f"{_file.stem}{'.sh'}")
-            remote_qsub_run_file_name = Path.joinpath(qsub_tmp_dir, qsub_run_file_name.name)
-            remote_qsub_start_file_name = Path.joinpath(qsub_tmp_dir, qsub_start_file_name.name)
+            remote_qsub_run_file_name = Path.joinpath(
+                qsub_tmp_dir, qsub_run_file_name.name
+            )
+            remote_qsub_start_file_name = Path.joinpath(
+                qsub_tmp_dir, qsub_start_file_name.name
+            )
             # this does not work:
             # cmd_arr = ["ssh", host_str, "/usr/bin/bash", "-l", "qsub", remote_qsub_run_file_name]
             # use bash script as workaround
@@ -378,7 +386,13 @@ def run_queue(
                     print("success...")
 
                 host_str = f"{qsub_user}@{qsub_host}"
-                cmd_arr = ["ssh", host_str, "/usr/bin/bash", "-l", remote_qsub_start_file_name]
+                cmd_arr = [
+                    "ssh",
+                    host_str,
+                    "/usr/bin/bash",
+                    "-l",
+                    remote_qsub_start_file_name,
+                ]
                 print(f"running command {' '.join(map(str, cmd_arr))}...")
                 sh_result = subprocess.run(cmd_arr, capture_output=True)
                 if sh_result.returncode != 0:
@@ -400,7 +414,6 @@ def run_queue(
             # scripts exist already, but in /tmp where the queue nodes can't read them
             # copy to submission directories
             # create tmp dir on qsub host; retain some parts
-            # host_str = f"{qsub_user}@{qsub_host}"
             if idx == 0:
                 cmd_arr = ["mkdir", "-p", qsub_tmp_dir]
                 print(f"running command {' '.join(map(str, cmd_arr))}...")
@@ -410,7 +423,7 @@ def run_queue(
                 else:
                     print("success...")
 
-            # copy aeroval config file to qsub host
+            # copy aeroval config file to cluster readable location
             host_str = f"{qsub_tmp_dir}/"
             cmd_arr = [*CP_COMMAND, _file, host_str]
             print(f"running command {' '.join(map(str, cmd_arr))}...")
@@ -419,9 +432,11 @@ def run_queue(
                 continue
             else:
                 print("success...")
-            # create qsub runfile and copy that to the qsub host
+            # create qsub runfile and copy that to cluster readable location
             qsub_run_file_name = _file.with_name(f"{_file.stem}{'.run'}")
-            remote_qsub_run_file_name = Path.joinpath(qsub_tmp_dir, qsub_run_file_name.name)
+            remote_qsub_run_file_name = Path.joinpath(
+                qsub_tmp_dir, qsub_run_file_name.name
+            )
             remote_json_file = Path.joinpath(qsub_tmp_dir, _file.name)
             dummy_arr = get_runfile_str_arr(
                 remote_json_file, wd=qsub_tmp_dir, script_name=remote_qsub_run_file_name
@@ -430,7 +445,7 @@ def run_queue(
             with open(qsub_run_file_name, "w") as f:
                 f.write("\n".join(dummy_arr))
 
-            # copy runfile to qsub host
+            # copy runfile to cluster readable location
             host_str = f"{qsub_tmp_dir}/"
             cmd_arr = [*CP_COMMAND, qsub_run_file_name, host_str]
             print(f"running command {' '.join(map(str, cmd_arr))}...")
@@ -445,8 +460,12 @@ def run_queue(
             # create a script with the qsub call and start that
             host_str = f"{qsub_tmp_dir}/"
             qsub_start_file_name = _file.with_name(f"{_file.stem}{'.sh'}")
-            remote_qsub_run_file_name = Path.joinpath(qsub_tmp_dir, qsub_run_file_name.name)
-            remote_qsub_start_file_name = Path.joinpath(qsub_tmp_dir, qsub_start_file_name.name)
+            remote_qsub_run_file_name = Path.joinpath(
+                qsub_tmp_dir, qsub_run_file_name.name
+            )
+            remote_qsub_start_file_name = Path.joinpath(
+                qsub_tmp_dir, qsub_start_file_name.name
+            )
             # this does not work:
             # cmd_arr = ["ssh", host_str, "/usr/bin/bash", "-l", "qsub", remote_qsub_run_file_name]
             # use bash script as workaround
@@ -479,7 +498,9 @@ def run_queue(
 
             else:
                 print(f"qsub files created on localhost.")
-                print(f"you can start the job with the command: qsub {remote_qsub_run_file_name}.")
+                print(
+                    f"you can start the job with the command: qsub {remote_qsub_run_file_name}."
+                )
 
 
 def combine_output(options: dict):
@@ -510,7 +531,9 @@ def combine_output(options: dict):
             for dir_idx, dir in enumerate(Path(combinedir).iterdir()):
                 # there should be just one directory. Use the 1st only anyway
                 if dir_idx == 0:
-                    exp_dir = [child for child in dir.iterdir() if Path.is_dir(child)][0]
+                    exp_dir = [child for child in dir.iterdir() if Path.is_dir(child)][
+                        0
+                    ]
 
                     shutil.copytree(dir, options["outdir"], dirs_exist_ok=True)
                     out_target_dir = Path.joinpath(options["outdir"], exp_dir.name)
@@ -552,7 +575,9 @@ def combine_output(options: dict):
                 elif match_file(cmp_file, MERGE_EXP_CFG_FILES):
                     # special treatment for the experiment configuration
                     # file names need to be adjusted
-                    cfg_file = inpath.joinpath(f"cfg_{inpath.parts[-2]}_{inpath.parts[-1]}.json")
+                    cfg_file = inpath.joinpath(
+                        f"cfg_{inpath.parts[-2]}_{inpath.parts[-1]}.json"
+                    )
                     outfile = out_target_dir.joinpath(
                         f"cfg_{options['outdir'].parts[-1]}_{inpath.parts[-1]}.json"
                     )
@@ -650,9 +675,9 @@ def dict_merge(dct: Union[None, dict], merge_dct: dict):
 
 
 def match_file(
-        file: str, file_mask_array: Union[str, list[str]] = MERGE_EXP_FILES_TO_COMBINE
+    file: str, file_mask_array: Union[str, list[str]] = MERGE_EXP_FILES_TO_COMBINE
 ) -> bool:
-    """small hekper that matches a filename agains a list if wildcards"""
+    """small helper that matches a filename against a list if wildcards"""
     if isinstance(file_mask_array, str):
         file_mask_array = [file_mask_array]
 
@@ -689,7 +714,7 @@ exiting now..."""
 
 
 def adjust_menujson(
-        menujson_file: str, cfg: str = None, config_file: str = None, cfgvar: str = None
+    menujson_file: str, cfg: str = None, config_file: str = None, cfgvar: str = None
 ) -> None:
     """helper to adjust the menu.json file according to a given aeroval config file"""
     # load aeroval config file
@@ -717,13 +742,15 @@ def adjust_menujson(
                 current_obs_order_dict = deepcopy(
                     menu_json_out_dict[_var]["obs"][obs_networks_present][obs_vert_type]
                 )
-                menu_json_out_dict[_var]["obs"][obs_networks_present][obs_vert_type] = {}
+                menu_json_out_dict[_var]["obs"][obs_networks_present][
+                    obs_vert_type
+                ] = {}
                 for _model in cfg["model_cfg"]:
                     # not all the model necessaryly provide all variables
                     try:
-                        menu_json_out_dict[_var]["obs"][obs_networks_present][obs_vert_type][
-                            _model
-                        ] = current_obs_order_dict[_model]
+                        menu_json_out_dict[_var]["obs"][obs_networks_present][
+                            obs_vert_type
+                        ][_model] = current_obs_order_dict[_model]
                     except KeyError:
                         pass
 
@@ -733,9 +760,14 @@ def adjust_menujson(
 
 
 def adjust_heatmapfile(
-        heatmap_files: list[Union[str, Path]], cfg: dict = None, config_file: str = None, cfgvar: str = None
+    heatmap_files: list[Union[str, Path]],
+    cfg: dict = None,
+    config_file: str = None,
+    cfgvar: str = None,
 ) -> None:
-    """helper to adjust the menu.json file according to a given aeroval config file"""
+    """helper to adjust the heatmal files (files matching AEROVAL_HEATMAP_FILES_MASK)
+    according to a given aeroval config file"""
+
     # load aeroval config file
     # load menu.json
     # adjust menu.json
@@ -780,7 +812,10 @@ def adjust_heatmapfile(
 
 
 def adjust_hm_ts_file(
-        ts_files: list[Union[str, Path]], cfg: dict = None, config_file: str = None, cfgvar: str = None
+    ts_files: list[Union[str, Path]],
+    cfg: dict = None,
+    config_file: str = None,
+    cfgvar: str = None,
 ) -> None:
     """helper to adjust the hm/ts/*.json files according to a given aeroval config file"""
     # load aeroval config file
@@ -829,18 +864,19 @@ def adjust_hm_ts_file(
 def main():
     """main program"""
 
+    #define some terminal colors to be used in the help
     colors = {
-        "PURPLE": "\033[95m",
-        "CYAN": "\033[96m",
         "BOLD": "\033[1m",
         "UNDERLINE": "\033[4m",
         "END": "\033[0m",
+        "PURPLE": "\033[95m",
+        "CYAN": "\033[96m",
+        "DARKCYAN": "\033[36m",
+        "BLUE": "\033[94m",
+        "GREEN": "\033[92m",
+        "YELLOW": "\033[93m",
+        "RED": "\033[91m",
     }
-    # DARKCYAN = '\033[36m'
-    # BLUE = '\033[94m'
-    # GREEN = '\033[92m'
-    # YELLOW = '\033[93m'
-    # RED = '\033[91m'
     script_name = Path(sys.argv[0]).name
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -870,15 +906,22 @@ def main():
 """,
     )
     parser.add_argument(
-        "files", help="file(s) to read, directories to combine (if -c switch is used)", nargs="+"
+        "files",
+        help="file(s) to read, directories to combine (if -c switch is used)",
+        nargs="+",
     )
-    parser.add_argument("-v", "--verbose", help="switch on verbosity", action="store_true")
+    parser.add_argument(
+        "-v", "--verbose", help="switch on verbosity", action="store_true"
+    )
 
     parser.add_argument(
-        "-e", "--env", help=f"conda env used to run the aeroval analysis; defaults to {CONDA_ENV}"
+        "-e",
+        "--env",
+        help=f"conda env used to run the aeroval analysis; defaults to {CONDA_ENV}",
     )
     parser.add_argument(
-        "--queue", help=f"queue name to submit the jobs to; defaults to {QSUB_QUEUE_NAME}"
+        "--queue",
+        help=f"queue name to submit the jobs to; defaults to {QSUB_QUEUE_NAME}",
     )
     parser.add_argument("--queue-user", help=f"queue user; defaults to {QSUB_USER}")
     parser.add_argument(
@@ -923,15 +966,23 @@ def main():
     )
 
     parser.add_argument(
-        "-l", "--localhost", help="start queue submission on localhost", action="store_true"
+        "-l",
+        "--localhost",
+        help="start queue submission on localhost",
+        action="store_true",
     )
 
     group_assembly = parser.add_argument_group(
         "data assembly:", "options for assembly of parallisations output"
     )
-    group_assembly.add_argument("-o", "--outdir", help="output directory for experiment assembly")
     group_assembly.add_argument(
-        "-c", "--combinedirs", help="combine the output of a parallel runs", action="store_true"
+        "-o", "--outdir", help="output directory for experiment assembly"
+    )
+    group_assembly.add_argument(
+        "-c",
+        "--combinedirs",
+        help="combine the output of a parallel runs",
+        action="store_true",
     )
     group_menujson = parser.add_argument_group(
         "adjust variable and model order",
@@ -1045,10 +1096,10 @@ Please add an output directory using the -o switch."""
         print(info_str)
 
     if (
-            not options["combinedirs"]
-            and not options["adjustmenujson"]
-            and not options["adjustheatmap"]
-            and not options["adjustall"]
+        not options["combinedirs"]
+        and not options["adjustmenujson"]
+        and not options["adjustheatmap"]
+        and not options["adjustall"]
     ):
         # create file for the queue
         runfiles = prep_files(options)
@@ -1063,13 +1114,17 @@ Please add an output directory using the -o switch."""
     elif options["adjustmenujson"]:
         # adjust menu.json
         adjust_menujson(
-            options["files"][1], config_file=options["files"][0], cfgvar=options["cfgvar"]
+            options["files"][1],
+            config_file=options["files"][0],
+            cfgvar=options["cfgvar"],
         )
 
     elif options["adjustheatmap"]:
         # adjust heatmap file
         adjust_heatmapfile(
-            options["files"][1:], config_file=options["files"][0], cfgvar=options["cfgvar"]
+            options["files"][1:],
+            config_file=options["files"][0],
+            cfgvar=options["cfgvar"],
         )
 
     elif options["adjustall"]:
@@ -1082,14 +1137,18 @@ Please add an output directory using the -o switch."""
 
         # adjust menu.json
         adjust_menujson(
-            menu_json_file, cfg=cfg,
+            menu_json_file,
+            cfg=cfg,
         )
 
         # adjust heatmap file
         hm_files = []
         for _mask in AEROVAL_HEATMAP_FILES_MASK:
             hm_files.extend([x for x in json_path.glob(_mask)])
-        adjust_heatmapfile(sorted(hm_files), cfg=cfg, )
+        adjust_heatmapfile(
+            sorted(hm_files),
+            cfg=cfg,
+        )
         # for _file in hm_files:
         #     adjust_heatmapfile(_file, cfg=cfg, )
 
