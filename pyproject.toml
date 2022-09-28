@@ -44,11 +44,22 @@ profile = "black"
 src_paths = ["src", "tests"]
 line_length = 99
 
+[tool.mypy]
+python_version = "3.8"
+warn_unused_configs = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_return_any = false
+warn_unreachable = true
+show_error_codes = true
+pretty = true
+sqlite_cache = true
+#exclude = "pyaerocom-tutorials|_build"
+
 [tool.tox]
 legacy_tox_ini = """
-
 [tox]
-envlist = py38, py39, py310, format, lint, docs
+envlist = py38, py39, py310, format, lint
 skip_missing_interpreters = True
 isolated_build = True
 
@@ -57,4 +68,10 @@ commands =
     pre-commit run --all-files --show-diff-on-failure
 deps =
     pre-commit
+
+[testenv:lint]
+commands =
+    mypy .
+depends = 
+    mypy>=0.981
 """
