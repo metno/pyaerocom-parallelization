@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
+
 from aeroval_parallelize.tools import (
     AEROVAL_HEATMAP_FILES_MASK,
     AEROVAL_HEATMAP_TS_FILES_MASK,
