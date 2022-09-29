@@ -2,4 +2,5 @@
 # from importlib import metadata
 # __version__ = metadata.version(__package__)
 
-from . import aeroval_parallelise as aeroval_parallelize
+from .cli import aeroval_parallelise as aeroval_parallelize
+from . import tools
