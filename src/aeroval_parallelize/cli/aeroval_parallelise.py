@@ -96,9 +96,6 @@ def main():
         help="do not submit to queue (all files created and copied, but no submission)",
         action="store_true",
     )
-    # parser.add_argument("--noobsnetparallelisation",
-    #                     help="don't pa",
-    #                     action="store_true")
     parser.add_argument(
         "--jsonrunscript",
         help=f"script to run json config files; defaults to {JSON_RUNSCRIPT}",
@@ -169,8 +166,6 @@ def main():
         help=" <aeroval cfgfile> <path to glob_*_monthly.json>; adjust order of menu.json to aeroval config file",
         action="store_true",
     )
-    # group_menujson.add_argument("-a", "--adjustall", help="adjust order of all models/variables to aeroval config file", nargs=2,
-    #                             metavar=("<aeroval cfgfile>", "<path to menu.json>"))
 
     args = parser.parse_args()
     options = {}
@@ -314,8 +309,6 @@ Please add an output directory using the -o switch."""
             sorted(hm_files),
             cfg=cfg,
         )
-        # for _file in hm_files:
-        #     adjust_heatmapfile(_file, cfg=cfg, )
 
         hm_ts_files = []
         # adjust hm/ts files
