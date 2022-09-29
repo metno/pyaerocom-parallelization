@@ -64,8 +64,9 @@ AEROVAL_CONFIG_FILE_MASK = ["cfg_*.json"]
 
 # match for heatmap files; the results of them are displayed according to their order
 # in the file. Unfortunately the parallelisation mixes that up, so we need to reorder them after
-# the assembly of the data data files
+# the assembly of the data files
 AEROVAL_HEATMAP_FILES_MASK = ["hm/glob_stats_*.json"]
+
 # filemask for ts files (tab=timeseries) in aeroval
 # these also use the order in the json file for display and therefore need to be adjusted
 AEROVAL_HEATMAP_TS_FILES_MASK = [
@@ -91,7 +92,7 @@ MERGE_EXP_FILES_TO_EXCLUDE = []
 # the config file need to be merged and have a special name
 MERGE_EXP_CFG_FILES = ["cfg_*.json"]
 # Name of conda env to use for running the aeroval analysis
-CONDA_ENV = "pyadev-applied"
+CONDA_ENV = "pya_para"
 
 
 def prep_files(options):
@@ -199,7 +200,7 @@ def prep_files(options):
     return runfiles
 
 
-def get_runfile_str_arr(
+def get_runfile_str(
     file,
     queue_name=QSUB_QUEUE_NAME,
     script_name=None,
@@ -264,7 +265,7 @@ echo "starting {file} ..." >> ${{logfile}}
 
 
 def run_queue(
-    runfiles: list[str],
+    runfiles: list[Path],
     qsub_host: str = QSUB_HOST,
     qsub_cmd: str = QSUB_NAME,
     qsub_dir: str = QSUB_DIR,
@@ -670,7 +671,7 @@ exiting now..."""
 
 
 def adjust_menujson(
-    menujson_file: str, cfg: str = None, config_file: str = None, cfgvar: str = None
+    menujson_file: str, cfg: dict = None, config_file: str = None, cfgvar: str = None
 ) -> None:
     """helper to adjust the menu.json file according to a given aeroval config file"""
     # load aeroval config file
