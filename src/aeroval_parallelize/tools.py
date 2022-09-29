@@ -219,7 +219,6 @@ def get_runfile_str(
     elif isinstance(script_name, Path):
         script_name = str(script_name)
 
-
     runfile_str = f"""#!/bin/bash -l
 #$ -S /bin/bash
 #$ -N {Path(file).stem}
@@ -812,6 +811,3 @@ def adjust_hm_ts_file(
         with open(_file, "w", encoding="utf-8") as outhandle:
             json.dump(heatmap_out_dict, outhandle, ensure_ascii=False, indent=4)
         print(f"updated {_file}")
-
-
-
