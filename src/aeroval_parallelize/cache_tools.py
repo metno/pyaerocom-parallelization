@@ -42,9 +42,12 @@ START_TIME = datetime.now().strftime("%Y%m%d_%H%M%S")
 CONDA_ENV = "pyadev-applied"
 
 
-def write_script(filename: str | Path, var: str = 'od550aer', obsnetwork: str = "AeronetSunV3Lev2.daily"):
+def write_script(
+    filename: str | Path, var: str = "od550aer", obsnetwork: str = "AeronetSunV3Lev2.daily"
+):
     import os
     import stat
+
     script_proto = f"""#!/usr/bin/env python3
     
 from pyaerocom.io import ReadUngridded
@@ -65,15 +68,15 @@ if __name__ == "__main__":
 
 
 def get_runfile_str_arr(
-        file,
-        queue_name=QSUB_QUEUE_NAME,
-        script_name=None,
-        # wd=QSUB_DIR,
-        wd=None,
-        mail=f"{QSUB_USER}@met.no",
-        logdir=QSUB_LOG_DIR,
-        date=START_TIME,
-        conda_env='pya_para',
+    file,
+    queue_name=QSUB_QUEUE_NAME,
+    script_name=None,
+    # wd=QSUB_DIR,
+    wd=None,
+    mail=f"{QSUB_USER}@met.no",
+    logdir=QSUB_LOG_DIR,
+    date=START_TIME,
+    conda_env="pya_para",
 ) -> str:
     """create list of strings with runfile for gridengine"""
     # create runfile
@@ -86,7 +89,7 @@ def get_runfile_str_arr(
     elif isinstance(script_name, Path):
         script_name = str(script_name)
 
-    runfile_str = f"""#!/bin/bash -l
+    runfile_str = f"""#!/usr/bin/env bash -l
 #$ -N {Path(file).stem}
 #$ -q {queue_name}
 #$ -pe shmem-1 1
@@ -128,16 +131,15 @@ echo "starting {file} ..." >> ${{logfile}}
     return runfile_str
 
 
-
 def run_queue(
-        runfiles: list[Path],
-        qsub_host: str = QSUB_HOST,
-        qsub_cmd: str = QSUB_NAME,
-        qsub_dir: str = QSUB_DIR,
-        qsub_user: str = QSUB_USER,
-        qsub_queue: str = QSUB_QUEUE_NAME,
-        submit_flag: bool = False,
-        options: dict = {},
+    runfiles: list[Path],
+    qsub_host: str = QSUB_HOST,
+    qsub_cmd: str = QSUB_NAME,
+    qsub_dir: str = QSUB_DIR,
+    qsub_user: str = QSUB_USER,
+    qsub_queue: str = QSUB_QUEUE_NAME,
+    submit_flag: bool = False,
+    options: dict = {},
 ):
     """submit runfiles to the remote cluster
 
@@ -321,8 +323,4 @@ qsub {remote_qsub_run_file_name}
 
             else:
                 print(f"qsub files created on localhost.")
-                print(
-                    f"you can start the job with the command: qsub {remote_qsub_run_file_name}."
-                )
-
-
+                print(f"you can start the job with the command: qsub {remote_qsub_run_file_name}.")
