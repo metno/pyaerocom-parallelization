@@ -90,6 +90,7 @@ def get_runfile_str_arr(
         script_name = str(script_name)
 
     runfile_str = f"""#!/usr/bin/env bash -l
+#$ -S /bin/bash
 #$ -N {Path(file).stem}
 #$ -q {queue_name}
 #$ -pe shmem-1 1
@@ -109,7 +110,7 @@ def get_runfile_str_arr(
 logdir="{logdir}/"
 date="{date}"
 logfile="${{logdir}}/${{USER}}.${{date}}.${{JOB_NAME}}.${{JOB_ID}}_log.txt"
-__conda_setup=$('/modules/centos7/user-apps/aerocom/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)
+__conda_setup="$('/modules/centos7/user-apps/aerocom/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
 if [ $? -eq 0 ]
 then eval "$__conda_setup"
 else
