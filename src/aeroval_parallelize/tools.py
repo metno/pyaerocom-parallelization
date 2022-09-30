@@ -688,7 +688,11 @@ def adjust_menujson(
     # model order is the one from cfg['model_cfg']
     menu_json_out_dict = {}
     for _var in cfg["var_order_menu"]:
-        menu_json_out_dict[_var] = deepcopy(menu_json_dict[_var])
+        # not all vars noted in cfg["var_order_menu"] are necessarily in the file
+        try:
+            menu_json_out_dict[_var] = deepcopy(menu_json_dict[_var])
+        except KeyError:
+            continue
         # now adjust the order of menu_json_out_dict[_var]["obs"][<obsnetwork>]['Column'|'Surface'].keys()
         obs_networks_present = menu_json_out_dict[_var]["obs"].keys()
         for obs_networks_present in menu_json_out_dict[_var]["obs"]:
@@ -740,7 +744,11 @@ def adjust_heatmapfile(
         # model order is the one from cfg['model_cfg']
         heatmap_out_dict = {}
         for _var in cfg["var_order_menu"]:
-            heatmap_out_dict[_var] = deepcopy(heatmap_dict[_var])
+            try:
+                heatmap_out_dict[_var] = deepcopy(heatmap_dict[_var])
+
+            except KeyError:
+                continue
             # now adjust the order of heatmap_out_dict[_var][<obsnetwork>]['Column'|'Surface'].keys()
             for obs_networks_present in heatmap_out_dict[_var]:
                 for obs_vert_type in heatmap_out_dict[_var][obs_networks_present]:
@@ -790,7 +798,10 @@ def adjust_hm_ts_file(
         # model order is the one from cfg['model_cfg']
         heatmap_out_dict = {}
         for _var in heatmap_dict:
-            heatmap_out_dict[_var] = deepcopy(heatmap_dict[_var])
+            try:
+                heatmap_out_dict[_var] = deepcopy(heatmap_dict[_var])
+            except KeyError:
+                continue
             # now adjust the order of heatmap_out_dict[_var][<obsnetwork>]['Column'|'Surface'].keys()
             for obs_networks_present in heatmap_out_dict[_var]:
                 for obs_vert_type in heatmap_out_dict[_var][obs_networks_present]:
