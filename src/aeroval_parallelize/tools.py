@@ -9,8 +9,6 @@ parallelisation for aeroval processing
 """
 from __future__ import annotations
 
-# some ideas what to use
-import argparse
 import sys
 from copy import deepcopy
 from datetime import datetime
@@ -64,8 +62,9 @@ AEROVAL_CONFIG_FILE_MASK = ["cfg_*.json"]
 
 # match for heatmap files; the results of them are displayed according to their order
 # in the file. Unfortunately the parallelisation mixes that up, so we need to reorder them after
-# the assembly of the data data files
+# the assembly of the data files
 AEROVAL_HEATMAP_FILES_MASK = ["hm/glob_stats_*.json"]
+
 # filemask for ts files (tab=timeseries) in aeroval
 # these also use the order in the json file for display and therefore need to be adjusted
 AEROVAL_HEATMAP_TS_FILES_MASK = [
@@ -91,7 +90,7 @@ MERGE_EXP_FILES_TO_EXCLUDE = []
 # the config file need to be merged and have a special name
 MERGE_EXP_CFG_FILES = ["cfg_*.json"]
 # Name of conda env to use for running the aeroval analysis
-CONDA_ENV = "pyadev-applied"
+CONDA_ENV = "pya_para"
 
 
 def prep_files(options):
@@ -199,7 +198,7 @@ def prep_files(options):
     return runfiles
 
 
-def get_runfile_str_arr(
+def get_runfile_str(
     file,
     queue_name=QSUB_QUEUE_NAME,
     script_name=None,
@@ -220,67 +219,50 @@ def get_runfile_str_arr(
     elif isinstance(script_name, Path):
         script_name = str(script_name)
 
-    runfile_arr = []
-    runfile_arr.append("#!/bin/bash -l")
-    runfile_arr.append("#$ -S /bin/bash")
-    # runfile_arr.append("#$ -N AEROVAL_NAME")
-    runfile_arr.append(f"#$ -N {Path(file).stem}")
-    # runfile_arr.append("#$ -q research-el7.q")
-    runfile_arr.append(f"#$ -q {queue_name}")
-    runfile_arr.append("#$ -pe shmem-1 1")
-    # runfile_arr.append("#$ -wd /home/UUSER/data/aeroval-local-web/pyaerocom_config/config_files")
-    runfile_arr.append(f"#$ -wd {wd}")
-    runfile_arr.append("#$ -l h_rt=96:00:00")
-    runfile_arr.append("#$ -l s_rt=96:00:00")
-    # runfile_arr.append("#$ -M UUSER@met.no")
+    runfile_str = f"""#!/bin/bash -l
+#$ -S /bin/bash
+#$ -N {Path(file).stem}
+#$ -q {queue_name}
+#$ -pe shmem-1 1
+#$ -wd {wd}
+#$ -l h_rt=96:00:00
+#$ -l s_rt=96:00:00
+"""
     if mail is not None:
-        runfile_arr.append(f"#$ -M {mail}")
-    runfile_arr.append("#$ -m abe")
-    runfile_arr.append("#$ -l h_vmem=20G")
-    runfile_arr.append("#$ -shell y")
-    runfile_arr.append("#$ -j y")
-    # runfile_arr.append("#$ -o /lustre/storeA/project/aerocom/logs/aeroval_logs/")
-    # runfile_arr.append("#$ -e /lustre/storeA/project/aerocom/logs/aeroval_logs/")
-    runfile_arr.append(f"#$ -o {logdir}/")
-    runfile_arr.append(f"#$ -e {logdir}/")
+        runfile_str += f"#$ -M {mail}\n"
+    runfile_str += f"""#$ -m abe
+#$ -l h_vmem=20G
+#$ -shell y
+#$ -j y
+#$ -o {logdir}/
+#$ -e {logdir}/
+logdir="{logdir}/"
+date="{date}"
+logfile="${{logdir}}/${{USER}}.${{date}}.${{JOB_NAME}}.${{JOB_ID}}_log.txt"
+__conda_setup=$('/modules/centos7/user-apps/aerocom/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)
+if [ $? -eq 0 ]
+then eval "$__conda_setup"
+else
+  echo conda not working! exiting...
+  exit 1
+fi
+echo "Got $NSLOTS slots for job $SGE_TASK_ID." >> ${{logfile}}
+module load aerocom/anaconda3-stable >> ${{logfile}} 2>&1
+module list >> ${{logfile}} 2>&1
+conda activate {conda_env} >> ${{logfile}} 2>&1
+conda env list >> ${{logfile}} 2>&1
+set -x
+python --version >> ${{logfile}} 2>&1
+pwd >> ${{logfile}} 2>&1
+echo "starting {file} ..." >> ${{logfile}}
+{str(JSON_RUNSCRIPT)} {str(file)} >> ${{logfile}} 2>&1
 
-    runfile_arr.append(f"logdir='{logdir}/'")
-    runfile_arr.append(f"date={date}")
-    runfile_arr.append('logfile="${logdir}/${USER}.${date}.${JOB_NAME}.${JOB_ID}_log.txt"')
-    runfile_arr.append(
-        "__conda_setup=\"$('/modules/centos7/user-apps/aerocom/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)\""
-    )
-
-    runfile_arr.append("if [ $? -eq 0 ]")
-    runfile_arr.append('  then eval "$__conda_setup"')
-    runfile_arr.append("else")
-    runfile_arr.append("  echo conda not working! exiting...")
-    runfile_arr.append("  exit 1")
-    runfile_arr.append("fi")
-
-    runfile_arr.append('echo "Got $NSLOTS slots for job $SGE_TASK_ID." >> ${logfile}')
-
-    runfile_arr.append("module load aerocom/anaconda3-stable >> ${logfile} 2>&1")
-    runfile_arr.append("module list >> ${logfile} 2>&1")
-
-    runfile_arr.append(f"conda activate {conda_env} >> ${{logfile}} 2>&1")
-    runfile_arr.append("conda env list >> ${logfile} 2>&1")
-
-    runfile_arr.append("set -x")
-    runfile_arr.append("python --version >> ${logfile} 2>&1")
-    runfile_arr.append("pwd >> ${logfile} 2>&1")
-    runfile_arr.append('echo "starting FILE ..." >> ${logfile}'.replace("FILE", str(file)))
-    runfile_arr.append(
-        "JSON_RUNSCRIPT FILE >> ${logfile} 2>&1".replace(
-            "JSON_RUNSCRIPT", str(JSON_RUNSCRIPT)
-        ).replace("FILE", str(file))
-    )
-    runfile_arr.append("")
-    return runfile_arr
+"""
+    return runfile_str
 
 
 def run_queue(
-    runfiles: list[str],
+    runfiles: list[Path],
     qsub_host: str = QSUB_HOST,
     qsub_cmd: str = QSUB_NAME,
     qsub_dir: str = QSUB_DIR,
@@ -329,12 +311,12 @@ def run_queue(
             qsub_run_file_name = _file.with_name(f"{_file.stem}{'.run'}")
             remote_qsub_run_file_name = Path.joinpath(qsub_tmp_dir, qsub_run_file_name.name)
             remote_json_file = Path.joinpath(qsub_tmp_dir, _file.name)
-            dummy_arr = get_runfile_str_arr(
+            dummy_str = get_runfile_str(
                 remote_json_file, wd=qsub_tmp_dir, script_name=remote_qsub_run_file_name
             )
             print(f"writing file {qsub_run_file_name}")
             with open(qsub_run_file_name, "w") as f:
-                f.write("\n".join(dummy_arr))
+                f.write(dummy_str)
 
             # copy runfile to qsub host
             host_str = f"{qsub_user}@{qsub_host}:{qsub_tmp_dir}/"
@@ -356,12 +338,12 @@ def run_queue(
             # this does not work:
             # cmd_arr = ["ssh", host_str, "/usr/bin/bash", "-l", "qsub", remote_qsub_run_file_name]
             # use bash script as workaround
-            start_script_arr = []
-            start_script_arr.append("#!/bin/bash -l")
-            start_script_arr.append(f"qsub {remote_qsub_run_file_name}")
-            start_script_arr.append("")
+            start_script_str = f"""#!/bin/bash -l
+qsub {remote_qsub_run_file_name}
+
+"""
             with open(qsub_start_file_name, "w") as f:
-                f.write("\n".join(start_script_arr))
+                f.write(start_script_str)
             cmd_arr = [*REMOTE_CP_COMMAND, qsub_start_file_name, host_str]
             if submit_flag:
                 print(f"running command {' '.join(map(str, cmd_arr))}...")
@@ -422,12 +404,12 @@ def run_queue(
             qsub_run_file_name = _file.with_name(f"{_file.stem}{'.run'}")
             remote_qsub_run_file_name = Path.joinpath(qsub_tmp_dir, qsub_run_file_name.name)
             remote_json_file = Path.joinpath(qsub_tmp_dir, _file.name)
-            dummy_arr = get_runfile_str_arr(
+            dummy_str = get_runfile_str(
                 remote_json_file, wd=qsub_tmp_dir, script_name=remote_qsub_run_file_name
             )
             print(f"writing file {qsub_run_file_name}")
             with open(qsub_run_file_name, "w") as f:
-                f.write("\n".join(dummy_arr))
+                f.write(dummy_str)
 
             # copy runfile to cluster readable location
             host_str = f"{qsub_tmp_dir}/"
@@ -449,12 +431,12 @@ def run_queue(
             # this does not work:
             # cmd_arr = ["ssh", host_str, "/usr/bin/bash", "-l", "qsub", remote_qsub_run_file_name]
             # use bash script as workaround
-            start_script_arr = []
-            start_script_arr.append("#!/bin/bash -l")
-            start_script_arr.append(f"qsub {remote_qsub_run_file_name}")
-            start_script_arr.append("")
+            start_script_str = f"""#!/bin/bash -l
+qsub {remote_qsub_run_file_name}
+
+"""
             with open(qsub_start_file_name, "w") as f:
-                f.write("\n".join(start_script_arr))
+                f.write(start_script_str)
             cmd_arr = [*CP_COMMAND, qsub_start_file_name, host_str]
             if submit_flag:
                 print(f"running command {' '.join(map(str, cmd_arr))}...")
@@ -607,7 +589,7 @@ def combine_output(options: dict):
         pass
 
 
-def combine_json_files(infiles: list[str], outfile: str) -> dict:
+def combine_json_files(infiles: list[str], outfile: str):
     """small helper to ingest infile into outfile"""
 
     result = {}
@@ -686,7 +668,7 @@ exiting now..."""
 
 
 def adjust_menujson(
-    menujson_file: str, cfg: str = None, config_file: str = None, cfgvar: str = None
+    menujson_file: str, cfg: dict = None, config_file: str = None, cfgvar: str = None
 ) -> None:
     """helper to adjust the menu.json file according to a given aeroval config file"""
     # load aeroval config file
@@ -706,7 +688,11 @@ def adjust_menujson(
     # model order is the one from cfg['model_cfg']
     menu_json_out_dict = {}
     for _var in cfg["var_order_menu"]:
-        menu_json_out_dict[_var] = deepcopy(menu_json_dict[_var])
+        # not all vars noted in cfg["var_order_menu"] are necessarily in the file
+        try:
+            menu_json_out_dict[_var] = deepcopy(menu_json_dict[_var])
+        except KeyError:
+            continue
         # now adjust the order of menu_json_out_dict[_var]["obs"][<obsnetwork>]['Column'|'Surface'].keys()
         obs_networks_present = menu_json_out_dict[_var]["obs"].keys()
         for obs_networks_present in menu_json_out_dict[_var]["obs"]:
@@ -735,12 +721,12 @@ def adjust_heatmapfile(
     config_file: str = None,
     cfgvar: str = None,
 ) -> None:
-    """helper to adjust the heatmal files (files matching AEROVAL_HEATMAP_FILES_MASK)
+    """helper to adjust the heatmap files (files matching AEROVAL_HEATMAP_FILES_MASK)
     according to a given aeroval config file"""
 
     # load aeroval config file
-    # load menu.json
-    # adjust menu.json
+    # load file
+    # adjust adjust it
 
     if cfg is None:
         cfg = read_config_var(config_file, cfgvar)
@@ -758,7 +744,11 @@ def adjust_heatmapfile(
         # model order is the one from cfg['model_cfg']
         heatmap_out_dict = {}
         for _var in cfg["var_order_menu"]:
-            heatmap_out_dict[_var] = deepcopy(heatmap_dict[_var])
+            try:
+                heatmap_out_dict[_var] = deepcopy(heatmap_dict[_var])
+
+            except KeyError:
+                continue
             # now adjust the order of heatmap_out_dict[_var][<obsnetwork>]['Column'|'Surface'].keys()
             for obs_networks_present in heatmap_out_dict[_var]:
                 for obs_vert_type in heatmap_out_dict[_var][obs_networks_present]:
@@ -808,7 +798,10 @@ def adjust_hm_ts_file(
         # model order is the one from cfg['model_cfg']
         heatmap_out_dict = {}
         for _var in heatmap_dict:
-            heatmap_out_dict[_var] = deepcopy(heatmap_dict[_var])
+            try:
+                heatmap_out_dict[_var] = deepcopy(heatmap_dict[_var])
+            except KeyError:
+                continue
             # now adjust the order of heatmap_out_dict[_var][<obsnetwork>]['Column'|'Surface'].keys()
             for obs_networks_present in heatmap_out_dict[_var]:
                 for obs_vert_type in heatmap_out_dict[_var][obs_networks_present]:
@@ -829,305 +822,3 @@ def adjust_hm_ts_file(
         with open(_file, "w", encoding="utf-8") as outhandle:
             json.dump(heatmap_out_dict, outhandle, ensure_ascii=False, indent=4)
         print(f"updated {_file}")
-
-
-def main():
-    """main program"""
-
-    # define some terminal colors to be used in the help
-    colors = {
-        "BOLD": "\033[1m",
-        "UNDERLINE": "\033[4m",
-        "END": "\033[0m",
-        "PURPLE": "\033[95m",
-        "CYAN": "\033[96m",
-        "DARKCYAN": "\033[36m",
-        "BLUE": "\033[94m",
-        "GREEN": "\033[92m",
-        "YELLOW": "\033[93m",
-        "RED": "\033[91m",
-    }
-    script_name = Path(sys.argv[0]).name
-    parser = argparse.ArgumentParser(
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        description="command line interface to aeroval parallelisation.",
-        epilog=f"""{colors['BOLD']}Example usages:{colors['END']}
-
-{colors['UNDERLINE']}run script on qsub host and do not submit jobs to queue:{colors['END']}
-    {script_name} --noqsub -l <cfg-file>
-
-{colors['UNDERLINE']}run script on workstation, set directory of aeroval files and submit to queue via qsub host:{colors['END']}
-   {script_name}  --remotetempdir <directory for aeroval files> <cfg-file>
-   
-   Note that the directory for aeroval files needs to be on a common file system for all cluster machines.
-   
-{colors['UNDERLINE']}set data directories and submit to queue:{colors['END']}
-    {script_name} --json_basedir /tmp/data --coldata_basedir /tmp/coldata --io_aux_file /tmp/gridded_io_aux.py <cfg-file>
-
-{colors['UNDERLINE']}assemble aeroval data after a parallel run has been finished: (runs always on the local machine){colors['END']}
-    {script_name} -c -o <output directory> <input directories>
-    {script_name} -c -o ${{HOME}}/tmp ${{HOME}}/tmpt39n2gp_*
-
-{colors['UNDERLINE']}adjust all variable and model orders to the one given in a aeroval config file:{colors['END']}
-    {script_name} --adjustall <aeroval-cfg-file> <path to menu.json>
-    {script_name} --adjustall  /tmp/config/cfg_cams2-82_IFS_beta.py /tmp/data/testmerge_all/IFS-beta/menu.json
-
-    
-""",
-    )
-    parser.add_argument(
-        "files",
-        help="file(s) to read, directories to combine (if -c switch is used)",
-        nargs="+",
-    )
-    parser.add_argument("-v", "--verbose", help="switch on verbosity", action="store_true")
-
-    parser.add_argument(
-        "-e",
-        "--env",
-        help=f"conda env used to run the aeroval analysis; defaults to {CONDA_ENV}",
-    )
-    parser.add_argument(
-        "--queue",
-        help=f"queue name to submit the jobs to; defaults to {QSUB_QUEUE_NAME}",
-    )
-    parser.add_argument("--queue-user", help=f"queue user; defaults to {QSUB_USER}")
-    parser.add_argument(
-        "--noqsub",
-        help="do not submit to queue (all files created and copied, but no submission)",
-        action="store_true",
-    )
-    # parser.add_argument("--noobsnetparallelisation",
-    #                     help="don't pa",
-    #                     action="store_true")
-    parser.add_argument(
-        "--jsonrunscript",
-        help=f"script to run json config files; defaults to {JSON_RUNSCRIPT}",
-        default=JSON_RUNSCRIPT,
-    )
-    parser.add_argument(
-        "--cfgvar",
-        help=f"variable that holds the aeroval config in the file(s) provided. Defaults to {DEFAULT_CFG_VAR}",
-        default=DEFAULT_CFG_VAR,
-    )
-    parser.add_argument(
-        "--tempdir",
-        help=f"directory for temporary files; defaults to {TMP_DIR}",
-        default=TMP_DIR,
-    )
-    parser.add_argument(
-        "--remotetempdir",
-        help=f"directory for temporary files on qsub node; defaults to {TMP_DIR}",
-        default=TMP_DIR,
-    )
-    parser.add_argument(
-        "--json_basedir",
-        help="set json_basedir in the config manually",
-    )
-    parser.add_argument(
-        "--coldata_basedir",
-        help="set coldata_basedir in the configuration manually",
-    )
-    parser.add_argument(
-        "--io_aux_file",
-        help="set io_aux_file in the configuration file manually",
-    )
-
-    parser.add_argument(
-        "-l",
-        "--localhost",
-        help="start queue submission on localhost",
-        action="store_true",
-    )
-
-    group_assembly = parser.add_argument_group(
-        "data assembly:", "options for assembly of parallisations output"
-    )
-    group_assembly.add_argument("-o", "--outdir", help="output directory for experiment assembly")
-    group_assembly.add_argument(
-        "-c",
-        "--combinedirs",
-        help="combine the output of a parallel runs",
-        action="store_true",
-    )
-    group_menujson = parser.add_argument_group(
-        "adjust variable and model order",
-        "options to change existing order of variables and models",
-    )
-    group_menujson.add_argument(
-        "-a",
-        "--adjustall",
-        help=" <aeroval cfgfile> <path to menu.json>; adjust order of all models/variables to aeroval config file",
-        action="store_true",
-    )
-    group_menujson.add_argument(
-        "--adjustmenujson",
-        help=" <aeroval cfgfile> <path to menu.json>; adjust order of menu.json to aeroval config file",
-        action="store_true",
-    )
-    group_menujson.add_argument(
-        "--adjustheatmap",
-        help=" <aeroval cfgfile> <path to glob_*_monthly.json>; adjust order of menu.json to aeroval config file",
-        action="store_true",
-    )
-    # group_menujson.add_argument("-a", "--adjustall", help="adjust order of all models/variables to aeroval config file", nargs=2,
-    #                             metavar=("<aeroval cfgfile>", "<path to menu.json>"))
-
-    args = parser.parse_args()
-    options = {}
-    if args.adjustall:
-        options["adjustall"] = True
-    else:
-        options["adjustall"] = False
-
-    if args.adjustmenujson:
-        options["adjustmenujson"] = True
-    else:
-        options["adjustmenujson"] = False
-
-    if args.adjustheatmap:
-        options["adjustheatmap"] = True
-    else:
-        options["adjustheatmap"] = False
-
-    if args.files:
-        options["files"] = args.files
-
-    if args.jsonrunscript:
-        options["jsonrunscript"] = args.jsonrunscript
-
-    if args.verbose:
-        options["verbose"] = True
-    else:
-        options["verbose"] = False
-
-    if args.noqsub:
-        options["noqsub"] = True
-    else:
-        options["noqsub"] = False
-
-    if args.env:
-        options["conda_env_name"] = args.env
-
-    if args.queue:
-        options["qsub_queue_name"] = args.queue
-    else:
-        options["qsub_queue_name"] = QSUB_QUEUE_NAME
-
-    if args.queue_user:
-        options["qsub_user"] = args.queue_user
-    else:
-        options["qsub_user"] = QSUB_USER
-
-    if args.tempdir:
-        options["tempdir"] = Path(args.tempdir)
-
-    if args.remotetempdir:
-        options["remotetempdir"] = Path(args.remotetempdir)
-
-    if args.cfgvar:
-        options["cfgvar"] = args.cfgvar
-
-    if args.json_basedir:
-        options["json_basedir"] = args.json_basedir
-
-    if args.coldata_basedir:
-        options["coldata_basedir"] = args.coldata_basedir
-
-    if args.io_aux_file:
-        options["io_aux_file"] = args.io_aux_file
-
-    if args.combinedirs:
-        options["combinedirs"] = True
-    else:
-        options["combinedirs"] = False
-
-    if args.localhost:
-        options["localhost"] = True
-    else:
-        options["localhost"] = False
-
-    if args.outdir:
-        options["outdir"] = Path(args.outdir)
-
-    # make sure that if -c switch is given also the -o option is there
-    if options["combinedirs"] and "outdir" not in options:
-        error_str = """Error: -c switch given but no output directory defined. 
-Please add an output directory using the -o switch."""
-        print(error_str)
-        sys.exit(1)
-
-    if options["localhost"]:
-        info_str = "INFO: starting queue submission on localhost (-l flag is set)."
-        print(info_str)
-
-    if (
-        not options["combinedirs"]
-        and not options["adjustmenujson"]
-        and not options["adjustheatmap"]
-        and not options["adjustall"]
-    ):
-        # create file for the queue
-        runfiles = prep_files(options)
-        if options["noqsub"] and options["verbose"]:
-            # just print the to be run files
-            for _runfile in runfiles:
-                print(f"created {_runfile}")
-            pass
-        else:
-            run_queue(runfiles, submit_flag=(not options["noqsub"]), options=options)
-
-    elif options["adjustmenujson"]:
-        # adjust menu.json
-        adjust_menujson(
-            options["files"][1],
-            config_file=options["files"][0],
-            cfgvar=options["cfgvar"],
-        )
-
-    elif options["adjustheatmap"]:
-        # adjust heatmap file
-        adjust_heatmapfile(
-            options["files"][1:],
-            config_file=options["files"][0],
-            cfgvar=options["cfgvar"],
-        )
-
-    elif options["adjustall"]:
-        # combine all necessary adjustments:
-        aeroval_conf_file = options["files"][0]
-        menu_json_file = options["files"][1]
-        json_path = Path(menu_json_file).parent
-
-        cfg = read_config_var(aeroval_conf_file, options["cfgvar"])
-
-        # adjust menu.json
-        adjust_menujson(
-            menu_json_file,
-            cfg=cfg,
-        )
-
-        # adjust heatmap file
-        hm_files = []
-        for _mask in AEROVAL_HEATMAP_FILES_MASK:
-            hm_files.extend([x for x in json_path.glob(_mask)])
-        adjust_heatmapfile(
-            sorted(hm_files),
-            cfg=cfg,
-        )
-        # for _file in hm_files:
-        #     adjust_heatmapfile(_file, cfg=cfg, )
-
-        hm_ts_files = []
-        # adjust hm/ts files
-        for _mask in AEROVAL_HEATMAP_TS_FILES_MASK:
-            hm_ts_files.extend([x for x in json_path.glob(_mask)])
-
-        adjust_hm_ts_file(hm_ts_files, cfg=cfg)
-
-    else:
-        result = combine_output(options)
-
-
-if __name__ == "__main__":
-    main()

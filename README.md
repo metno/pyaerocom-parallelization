@@ -13,7 +13,7 @@ all necessary files are copied to the GridEngine submit host and submitted from 
   2. assemble the json files (after all jobs have finished)
   3. adjust variable and model order
 - runtime environment is defined via a conda environment in the `aerocom/anaconda3-stable` module 
-(named `pyadev-applied` by default )
+(named `pya-para` by default; maintained by jang). Venvs are not supported at the moment.
 
 ## minimal documentation:
 
