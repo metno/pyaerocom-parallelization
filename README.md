@@ -15,7 +15,7 @@ all necessary files are copied to the GridEngine submit host and submitted from 
 - runtime environment is defined via a conda environment in the `aerocom/anaconda3-stable` module 
 (named `pya-para` by default; maintained by jang). Venvs are not supported at the moment.
 
-## minimal documentation:
+### minimal documentation:
 
 
 __run aeroval config file on qsub host and do not submit jobs to queue:__
@@ -41,3 +41,28 @@ __adjust all variable and model orders to the one given in a aeroval config file
 
     aeroval_parallelize --adjustall <aeroval-cfg-file> <path to menu.json>
     aeroval_parallelize --adjustall  /tmp/config/cfg_cams2-82_IFS_beta.py /tmp/data/testmerge_all/IFS-beta/menu.json
+
+## cache file generation
+
+Part of this project is also a simple cache file generator for pyaerocom. After a standard installation of this package, 
+it is available as the command `pyaerocom_cachegen`
+
+### minimal documentation
+
+__start cache creation serially on localhost__
+
+  ```
+  pyaerocom_cachegen --vars concpm10 concpm25 -o EEAAQeRep.v2
+  ```
+
+__start cache creation parallel on qsub host (current host is NOT qsub host)__
+
+  ```
+  pyaerocom_cachegen --qsub --vars ang4487aer od550aer -o AeronetSunV3Lev2.daily
+  ```
+
+__start cache creation parallel on qsub host (current host IS qsub host)__
+
+  ```
+  pyaerocom_cachegen -l --qsub --vars concpm10 concpm25 vmro3 concno2 -o EEAAQeRep.NRT
+  ```
