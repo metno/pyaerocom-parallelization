@@ -666,6 +666,26 @@ exiting now..."""
         sys.exit(1)
     return cfg
 
+def get_config_info(config_file: str, cfgvar: str, cfg: dict = None, ) -> dict:
+    """method to return the used observations and variables in formatted way
+
+    returns a dict with the obs network name as key and the corresponding variables values"""
+
+    if not cfg:
+        cfg = read_config_var(config_file=config_file, cfgvar=cfgvar)
+
+    var_config = {}
+    for _obs_network in cfg["obs_cfg"]:
+        try:
+            if cfg["obs_cfg"][_obs_network]['is_superobs']:
+                continue
+        except KeyError:
+            pass
+
+        var_config[cfg["obs_cfg"][_obs_network]['obs_id']] = cfg["obs_cfg"][_obs_network]['obs_vars']
+
+    return var_config
+
 
 def adjust_menujson(
     menujson_file: str, cfg: dict = None, config_file: str = None, cfgvar: str = None
