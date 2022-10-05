@@ -41,6 +41,9 @@ START_TIME = datetime.now().strftime("%Y%m%d_%H%M%S")
 # Name of conda env to use for running the aeroval analysis
 CONDA_ENV = "pyadev-applied"
 
+# starting part of the qsub job name
+QSUB_SCRIPT_START = "create_cache"
+
 
 def write_script(
     filename: str | Path, var: str = "od550aer", obsnetwork: str = "AeronetSunV3Lev2.daily"

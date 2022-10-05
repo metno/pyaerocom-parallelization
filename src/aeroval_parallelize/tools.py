@@ -23,6 +23,8 @@ from uuid import uuid4
 
 import simplejson as json
 
+from aeroval_parallelize.cache_tools import QSUB_SCRIPT_START
+
 DEFAULT_CFG_VAR = "CFG"
 RUN_UUID = uuid4()
 HOSTNAME = gethostname()
@@ -98,7 +100,10 @@ def prep_files(options):
     return a list of files
 
     """
+    # returned list of runfiles
     runfiles = []
+    # dict with the run filename as key and the corresponding cache creation mask
+    cache_job_id_mask = {}
 
     for _file in options["files"]:
         # read aeroval config file
@@ -168,6 +173,9 @@ def prep_files(options):
                     ] = f"{cfg['coldata_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
                     cfg_file = Path(_file).stem
                     outfile = Path(tempdir).joinpath(f"{cfg_file}_{_model}_{_obs_network}.json")
+                    # the parallelisation is based on obs network for now only, while the cache
+                    # generation runs the variables in parallel already
+                    cache_job_id_mask[outfile] = f"{QSUB_SCRIPT_START}_{_obs_network}*"
                     print(f"writing file {outfile}")
                     with open(outfile, "w", encoding="utf-8") as j:
                         json.dump(out_cfg, j, ensure_ascii=False, indent=4)
@@ -187,6 +195,7 @@ def prep_files(options):
                 ] = f"{cfg['coldata_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
                 cfg_file = Path(_file).stem
                 outfile = Path(tempdir).joinpath(f"{cfg_file}_{_model}_{_obs_network}.json")
+                cache_job_id_mask[outfile] = f"{QSUB_SCRIPT_START}_{_obs_network}*"
                 print(f"writing file {outfile}")
                 with open(outfile, "w", encoding="utf-8") as j:
                     json.dump(out_cfg, j, ensure_ascii=False, indent=4)
@@ -195,7 +204,7 @@ def prep_files(options):
                 if options["verbose"]:
                     print(out_cfg)
 
-    return runfiles
+    return runfiles, cache_job_id_mask
 
 
 def get_runfile_str(
@@ -207,8 +216,22 @@ def get_runfile_str(
     logdir=QSUB_LOG_DIR,
     date=START_TIME,
     conda_env=CONDA_ENV,
+    hold_pattern=None,
 ):
-    """create list of strings with runfile for gridengine"""
+    """create list of strings with runfile for gridengine
+
+    Parameters
+    ----------
+    hold_pattern
+    file
+    queue_name
+    script_name
+    wd
+    mail
+    logdir
+    date
+    conda_env
+    """
     # create runfile
 
     if wd is None:
@@ -236,6 +259,11 @@ def get_runfile_str(
 #$ -j y
 #$ -o {logdir}/
 #$ -e {logdir}/
+"""
+    if hold_pattern is not None and isinstance(hold_pattern, str):
+        runfile_str += f"""#$ -hold_jid {hold_pattern}\n"""
+
+    runfile_str += f"""
 logdir="{logdir}/"
 date="{date}"
 logfile="${{logdir}}/${{USER}}.${{date}}.${{JOB_NAME}}.${{JOB_ID}}_log.txt"
@@ -285,6 +313,10 @@ def run_queue(
     qsub_tmp_dir = Path.joinpath(Path(qsub_dir), f"qsub.{runfiles[0].parts[-2]}")
 
     for idx, _file in enumerate(runfiles):
+        try:
+            hold_pattern = options["hold_jid"][_file]
+        except KeyError:
+            hold_pattern = None
         # copy runfiles to qsub host if qsub host is not localhost
         if not options["localhost"]:
             # create tmp dir on qsub host; retain some parts
@@ -312,7 +344,10 @@ def run_queue(
             remote_qsub_run_file_name = Path.joinpath(qsub_tmp_dir, qsub_run_file_name.name)
             remote_json_file = Path.joinpath(qsub_tmp_dir, _file.name)
             dummy_str = get_runfile_str(
-                remote_json_file, wd=qsub_tmp_dir, script_name=remote_qsub_run_file_name
+                remote_json_file,
+                wd=qsub_tmp_dir,
+                script_name=remote_qsub_run_file_name,
+                hold_pattern=hold_pattern,
             )
             print(f"writing file {qsub_run_file_name}")
             with open(qsub_run_file_name, "w") as f:
@@ -405,7 +440,10 @@ qsub {remote_qsub_run_file_name}
             remote_qsub_run_file_name = Path.joinpath(qsub_tmp_dir, qsub_run_file_name.name)
             remote_json_file = Path.joinpath(qsub_tmp_dir, _file.name)
             dummy_str = get_runfile_str(
-                remote_json_file, wd=qsub_tmp_dir, script_name=remote_qsub_run_file_name
+                remote_json_file,
+                wd=qsub_tmp_dir,
+                script_name=remote_qsub_run_file_name,
+                hold_pattern=hold_pattern,
             )
             print(f"writing file {qsub_run_file_name}")
             with open(qsub_run_file_name, "w") as f:
@@ -666,7 +704,12 @@ exiting now..."""
         sys.exit(1)
     return cfg
 
-def get_config_info(config_file: str, cfgvar: str, cfg: dict = None, ) -> dict:
+
+def get_config_info(
+    config_file: str,
+    cfgvar: str,
+    cfg: dict = None,
+) -> dict:
     """method to return the used observations and variables in formatted way
 
     returns a dict with the obs network name as key and the corresponding variables values"""
@@ -677,12 +720,14 @@ def get_config_info(config_file: str, cfgvar: str, cfg: dict = None, ) -> dict:
     var_config = {}
     for _obs_network in cfg["obs_cfg"]:
         try:
-            if cfg["obs_cfg"][_obs_network]['is_superobs']:
+            if cfg["obs_cfg"][_obs_network]["is_superobs"]:
                 continue
         except KeyError:
             pass
 
-        var_config[cfg["obs_cfg"][_obs_network]['obs_id']] = cfg["obs_cfg"][_obs_network]['obs_vars']
+        var_config[cfg["obs_cfg"][_obs_network]["obs_id"]] = cfg["obs_cfg"][_obs_network][
+            "obs_vars"
+        ]
 
     return var_config
 

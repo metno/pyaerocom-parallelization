@@ -82,6 +82,11 @@ def main():
         nargs="+",
     )
     parser.add_argument("-v", "--verbose", help="switch on verbosity", action="store_true")
+    parser.add_argument(
+        "--nocache",
+        help="switch off cache generation before running aeroval",
+        action="store_true",
+    )
 
     parser.add_argument(
         "-e",
@@ -176,6 +181,11 @@ def main():
     else:
         options["adjustall"] = False
 
+    if args.nocache:
+        options["nocache"] = True
+    else:
+        options["nocache"] = False
+
     if args.adjustmenujson:
         options["adjustmenujson"] = True
     else:
@@ -263,8 +273,16 @@ Please add an output directory using the -o switch."""
         and not options["adjustheatmap"]
         and not options["adjustall"]
     ):
-        # create file for the queue
-        runfiles = prep_files(options)
+        # create aeroval config file for the queue
+        # for now one for each model and Obsntwork combination
+        runfiles, cache_job_id_mask = prep_files(options)
+        if not options["nocache"]:
+            # CREATE CACHE
+            # create jobs for cache file generation first and add the wait for them to the qsub parameters
+            # add waiting for all cache file generation scriopts for now
+            # options["hold_jid"] = "create_cache_*"
+            options["hold_jid"] = cache_job_id_mask
+
         if options["noqsub"] and options["verbose"]:
             # just print the to be run files
             for _runfile in runfiles:

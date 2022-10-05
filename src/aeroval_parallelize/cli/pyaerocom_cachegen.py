@@ -15,6 +15,7 @@ from tempfile import mkdtemp
 from aeroval_parallelize.cache_tools import (
     CONDA_ENV,
     QSUB_QUEUE_NAME,
+    QSUB_SCRIPT_START,
     QSUB_USER,
     TMP_DIR,
     run_queue,
@@ -166,7 +167,7 @@ def main():
     for obs_network in options["obsnetworks"]:
         for var in options["vars"]:
             # write python file
-            outfile = tempdir.joinpath("_".join(["create_cache", obs_network, var + ".py"]))
+            outfile = tempdir.joinpath("_".join([QSUB_SCRIPT_START, obs_network, var + ".py"]))
             write_script(outfile, var=var, obsnetwork=obs_network)
             scripts_to_run.append(outfile)
 
