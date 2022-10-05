@@ -29,7 +29,10 @@ from aeroval_parallelize.tools import (
     prep_files,
     read_config_var,
     run_queue,
+    get_config_info,
 )
+
+CACHE_CREATION_CMD = "pyaerocom_cachegen"
 
 
 def main():
@@ -282,6 +285,38 @@ Please add an output directory using the -o switch."""
             # add waiting for all cache file generation scriopts for now
             # options["hold_jid"] = "create_cache_*"
             options["hold_jid"] = cache_job_id_mask
+            # now start cache file generation using the command line for simplicity
+            for _aeroval_file in runfiles:
+                conf_info = get_config_info(_aeroval_file, options["cfgvar"])
+                # TODO: add conda env  options
+                for obs_net in conf_info:
+                    cmd_arr = [*CACHE_CREATION_CMD]
+                    if options["localhost"]:
+                        cmd_arr.append("-l")
+                    else:
+                        cmd_arr = [*CACHE_CREATION_CMD, _file, host_str]
+                    if not options["noqsub"]:
+                        cmd_arr.append("--qsub")
+
+                    cmd_arr.append(
+                        [
+                            "--queue",
+                            options["qsub_queue_name"],
+                            "--queue_user",
+                            options["qsub_user"],
+                            "--vars",
+                            *conf_info[obs_net],
+                            "-o",
+                            obs_net,
+                        ]
+                    )
+
+                    print(f"running command {' '.join(map(str, cmd_arr))}...")
+                    sh_result = subprocess.run(cmd_arr, capture_output=True)
+                    if sh_result.returncode != 0:
+                        continue
+                    else:
+                        print("success...")
 
         if options["noqsub"] and options["verbose"]:
             # just print the to be run files
