@@ -10,6 +10,7 @@ command line interface for parallelisation for aeroval processing
 from __future__ import annotations
 
 import argparse
+import subprocess
 import sys
 from pathlib import Path
 
@@ -19,6 +20,7 @@ from aeroval_parallelize.tools import (
     CONDA_ENV,
     DEFAULT_CFG_VAR,
     JSON_RUNSCRIPT,
+    QSUB_HOST,
     QSUB_QUEUE_NAME,
     QSUB_USER,
     TMP_DIR,
@@ -26,13 +28,13 @@ from aeroval_parallelize.tools import (
     adjust_hm_ts_file,
     adjust_menujson,
     combine_output,
+    get_config_info,
     prep_files,
     read_config_var,
     run_queue,
-    get_config_info,
 )
 
-CACHE_CREATION_CMD = "pyaerocom_cachegen"
+CACHE_CREATION_CMD = ["pyaerocom_cachegen"]
 
 
 def main():
@@ -97,16 +99,6 @@ def main():
         help=f"conda env used to run the aeroval analysis; defaults to {CONDA_ENV}",
     )
     parser.add_argument(
-        "--queue",
-        help=f"queue name to submit the jobs to; defaults to {QSUB_QUEUE_NAME}",
-    )
-    parser.add_argument("--queue-user", help=f"queue user; defaults to {QSUB_USER}")
-    parser.add_argument(
-        "--noqsub",
-        help="do not submit to queue (all files created and copied, but no submission)",
-        action="store_true",
-    )
-    parser.add_argument(
         "--jsonrunscript",
         help=f"script to run json config files; defaults to {JSON_RUNSCRIPT}",
         default=JSON_RUNSCRIPT,
@@ -143,6 +135,20 @@ def main():
         "-l",
         "--localhost",
         help="start queue submission on localhost",
+        action="store_true",
+    )
+    group_queue_opts = parser.add_argument_group("queue options:", "options for running on PPI")
+    group_queue_opts.add_argument(
+        "--queue",
+        help=f"queue name to submit the jobs to; defaults to {QSUB_QUEUE_NAME}",
+    )
+    group_queue_opts.add_argument(
+        "--qsub-host", help=f"queue submission host; defaults to {QSUB_HOST}", default=QSUB_HOST
+    )
+    group_queue_opts.add_argument("--queue-user", help=f"queue user; defaults to {QSUB_USER}")
+    group_queue_opts.add_argument(
+        "--noqsub",
+        help="do not submit to queue (all files created and copied, but no submission)",
         action="store_true",
     )
 
@@ -223,6 +229,9 @@ def main():
     else:
         options["qsub_queue_name"] = QSUB_QUEUE_NAME
 
+    if args.qsub_host:
+        options["qsub_host"] = args.qsub_host
+
     if args.queue_user:
         options["qsub_user"] = args.queue_user
     else:
@@ -285,6 +294,8 @@ Please add an output directory using the -o switch."""
             # add waiting for all cache file generation scriopts for now
             # options["hold_jid"] = "create_cache_*"
             options["hold_jid"] = cache_job_id_mask
+
+            host_str = f"{options['qsub_user']}@{options['qsub_host']}"
             # now start cache file generation using the command line for simplicity
             for _aeroval_file in runfiles:
                 conf_info = get_config_info(_aeroval_file, options["cfgvar"])
@@ -292,24 +303,27 @@ Please add an output directory using the -o switch."""
                 for obs_net in conf_info:
                     cmd_arr = [*CACHE_CREATION_CMD]
                     if options["localhost"]:
-                        cmd_arr.append("-l")
+                        cmd_arr += ["-l"]
                     else:
-                        cmd_arr = [*CACHE_CREATION_CMD, _file, host_str]
+                        cmd_arr += [*CACHE_CREATION_CMD, _aeroval_file, host_str]
                     if not options["noqsub"]:
-                        cmd_arr.append("--qsub")
-
-                    cmd_arr.append(
-                        [
+                        # append queue options
+                        queue_opts = [
+                            "--qsub",
                             "--queue",
                             options["qsub_queue_name"],
                             "--queue_user",
                             options["qsub_user"],
-                            "--vars",
-                            *conf_info[obs_net],
-                            "-o",
-                            obs_net,
                         ]
-                    )
+                        cmd_arr += queue_opts
+
+                    static_opts = [
+                        "--vars",
+                        *conf_info[obs_net],
+                        "-o",
+                        obs_net,
+                    ]
+                    cmd_arr += static_opts
 
                     print(f"running command {' '.join(map(str, cmd_arr))}...")
                     sh_result = subprocess.run(cmd_arr, capture_output=True)

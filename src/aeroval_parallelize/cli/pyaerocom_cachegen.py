@@ -14,6 +14,7 @@ from tempfile import mkdtemp
 
 from aeroval_parallelize.cache_tools import (
     CONDA_ENV,
+    QSUB_HOST,
     QSUB_QUEUE_NAME,
     QSUB_SCRIPT_START,
     QSUB_USER,
@@ -56,20 +57,8 @@ def main():
         "-e", "--env", help=f"conda env used to run the aeroval analysis; defaults to {CONDA_ENV}"
     )
     parser.add_argument(
-        "--queue", help=f"queue name to submit the jobs to; defaults to {QSUB_QUEUE_NAME}"
-    )
-    parser.add_argument("--queue-user", help=f"queue user; defaults to {QSUB_USER}")
-    parser.add_argument(
-        "--qsub", help="submit to queue using the qsub command", action="store_true"
-    )
-    parser.add_argument(
         "--tempdir",
         help=f"directory for temporary files; defaults to {TMP_DIR}",
-        default=TMP_DIR,
-    )
-    parser.add_argument(
-        "--remotetempdir",
-        help=f"directory for temporary files on qsub node; defaults to {TMP_DIR}",
         default=TMP_DIR,
     )
 
@@ -81,6 +70,31 @@ def main():
         "--printobsnetworks",
         help="just print the names of the supported obs network",
         action="store_true",
+    )
+    group_queue_opts = parser.add_argument_group("queue options", "options for running on PPI")
+    group_queue_opts.add_argument(
+        "--queue",
+        help=f"queue name to submit the jobs to; defaults to {QSUB_QUEUE_NAME}",
+        default=QSUB_QUEUE_NAME,
+    )
+    group_queue_opts.add_argument(
+        "--qsub-host", help=f"queue submission host; defaults to {QSUB_HOST}", default=QSUB_HOST
+    )
+    group_queue_opts.add_argument(
+        "--queue-user", help=f"queue user; defaults to {QSUB_USER}", default=QSUB_USER
+    )
+    group_queue_opts.add_argument(
+        "--qsub", help="submit to queue using the qsub command", action="store_true"
+    )
+    # group_queue_opts.add_argument(
+    #     "--dry-qsub",
+    #     help="copy all files to qsub host, but do not submit to queue",
+    #     action="store_true",
+    # )
+    group_queue_opts.add_argument(
+        "--remotetempdir",
+        help=f"directory for temporary files on qsub node; defaults to {TMP_DIR}",
+        default=TMP_DIR,
     )
 
     args = parser.parse_args()
@@ -141,13 +155,14 @@ def main():
 
     if args.queue:
         options["qsub_queue_name"] = args.queue
-    else:
-        options["qsub_queue_name"] = QSUB_QUEUE_NAME
+
+    # if args.dry_qsub:
+    #     options["dry_qsub"] = True
+    # else:
+    #     options["dry_qsub"] = False
 
     if args.queue_user:
         options["qsub_user"] = args.queue_user
-    else:
-        options["qsub_user"] = QSUB_USER
 
     if args.tempdir:
         options["tempdir"] = Path(args.tempdir)
@@ -173,7 +188,6 @@ def main():
 
     if options["localhost"] or options["qsub"]:
         # run via queue, either on localhost or qsub submit host
-        pass
         run_queue(scripts_to_run, submit_flag=(options["qsub"]), options=options)
     else:
         # run serially on localhost
