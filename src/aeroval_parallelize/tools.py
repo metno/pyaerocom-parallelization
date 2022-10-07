@@ -161,6 +161,9 @@ def prep_files(options):
             if no_superobs_flag:
                 out_cfg.pop("obs_cfg", None)
                 for _obs_network in cfg["obs_cfg"]:
+                    # cache file generation works with pyaerocom's obs network names
+                    # and not the one of aeroval (those used in the web interface)
+                    pya_obsid = cfg["obs_cfg"][_obs_network]["obs_id"]
                     out_cfg["obs_cfg"] = {}
                     out_cfg["obs_cfg"][_obs_network] = cfg["obs_cfg"][_obs_network]
                     # adjust json_basedir and coldata_basedir so that the different runs
@@ -175,7 +178,7 @@ def prep_files(options):
                     outfile = Path(tempdir).joinpath(f"{cfg_file}_{_model}_{_obs_network}.json")
                     # the parallelisation is based on obs network for now only, while the cache
                     # generation runs the variables in parallel already
-                    cache_job_id_mask[outfile] = f"{QSUB_SCRIPT_START}_{_obs_network}*"
+                    cache_job_id_mask[outfile] = f"{QSUB_SCRIPT_START}_{pya_obsid}*"
                     print(f"writing file {outfile}")
                     with open(outfile, "w", encoding="utf-8") as j:
                         json.dump(out_cfg, j, ensure_ascii=False, indent=4)
