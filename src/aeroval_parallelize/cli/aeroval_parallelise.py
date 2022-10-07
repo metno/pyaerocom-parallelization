@@ -292,18 +292,31 @@ Please add an output directory using the -o switch."""
         # create aeroval config file for the queue
         # for now one for each model and Obsntwork combination
         runfiles, cache_job_id_mask = prep_files(options)
+        host_str = f"{options['qsub_user']}@{options['qsub_host']}"
         if not options["nocache"]:
             # CREATE CACHE
-            # create jobs for cache file generation first and add the wait for them to the qsub parameters
-            # add waiting for all cache file generation scriopts for now
-            # options["hold_jid"] = "create_cache_*"
-            options["hold_jid"] = cache_job_id_mask
-
-            host_str = f"{options['qsub_user']}@{options['qsub_host']}"
             # now start cache file generation using the command line for simplicity
-            # for _aeroval_file in runfiles:
-            for _aeroval_file in options["files"]:
+
+            # store already submitted obs networks
+            submitted_obs_nets = {}
+            for _aeroval_file in runfiles:
+                # create jobs for cache file generation first and add the wait for them to the qsub parameters
+                # add waiting for all cache file generation scriopts for now
+                # options["hold_jid"] = "create_cache_*"
+                options["hold_jid"] = cache_job_id_mask[_aeroval_file]
+
+            # for _aeroval_file in options["files"]:
                 conf_info = get_config_info(_aeroval_file, options["cfgvar"])
+                obs_net_key = next(iter(conf_info))
+                if obs_net_key in submitted_obs_nets: #conf info always has just one key
+                    # Obs net could have been used before, but not necessarily all vars
+                    # the following creates a list of
+                    if all(item in submitted_obs_nets[obs_net_key] for item in conf_info[obs_net_key]):
+                        continue
+                    else:
+                        submitted_obs_nets[obs_net_key] += list(set(submitted_obs_nets[obs_net_key]) - set(conf_info[obs_net_key]))
+                else:
+                    submitted_obs_nets.update(deepcopy(conf_info))
                 # TODO: add conda env  options
                 cmd_arr = [*CACHE_CREATION_CMD]
                 if options["localhost"]:
