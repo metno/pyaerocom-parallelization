@@ -87,11 +87,6 @@ def main():
         nargs="+",
     )
     parser.add_argument("-v", "--verbose", help="switch on verbosity", action="store_true")
-    parser.add_argument(
-        "--nocache",
-        help="switch off cache generation before running aeroval",
-        action="store_true",
-    )
 
     parser.add_argument(
         "-e",
@@ -137,7 +132,16 @@ def main():
         help="start queue submission on localhost",
         action="store_true",
     )
-    group_queue_opts = parser.add_argument_group("queue options:", "options for running on PPI")
+    group_caching = parser.add_argument_group(
+        "caching options", "options for cache file generation"
+    )
+    group_caching.add_argument(
+        "--nocache",
+        help="switch off cache generation before running aeroval",
+        action="store_true",
+    )
+
+    group_queue_opts = parser.add_argument_group("queue options", "options for running on PPI")
     group_queue_opts.add_argument(
         "--queue",
         help=f"queue name to submit the jobs to; defaults to {QSUB_QUEUE_NAME}",
@@ -153,7 +157,7 @@ def main():
     )
 
     group_assembly = parser.add_argument_group(
-        "data assembly:", "options for assembly of parallisations output"
+        "data assembly", "options for assembly of parallisations output"
     )
     group_assembly.add_argument("-o", "--outdir", help="output directory for experiment assembly")
     group_assembly.add_argument(
@@ -297,25 +301,26 @@ Please add an output directory using the -o switch."""
 
             host_str = f"{options['qsub_user']}@{options['qsub_host']}"
             # now start cache file generation using the command line for simplicity
-            for _aeroval_file in runfiles:
+            # for _aeroval_file in runfiles:
+            for _aeroval_file in options["files"]:
                 conf_info = get_config_info(_aeroval_file, options["cfgvar"])
                 # TODO: add conda env  options
+                cmd_arr = [*CACHE_CREATION_CMD]
+                if options["localhost"]:
+                    cmd_arr += ["-l"]
+                # else:
+                #     cmd_arr += [_aeroval_file, host_str]
+                if not options["noqsub"]:
+                    # append queue options
+                    queue_opts = [
+                        "--qsub",
+                        "--queue",
+                        options["qsub_queue_name"],
+                        "--queue-user",
+                        options["qsub_user"],
+                    ]
+                    cmd_arr += queue_opts
                 for obs_net in conf_info:
-                    cmd_arr = [*CACHE_CREATION_CMD]
-                    if options["localhost"]:
-                        cmd_arr += ["-l"]
-                    else:
-                        cmd_arr += [*CACHE_CREATION_CMD, _aeroval_file, host_str]
-                    if not options["noqsub"]:
-                        # append queue options
-                        queue_opts = [
-                            "--qsub",
-                            "--queue",
-                            options["qsub_queue_name"],
-                            "--queue_user",
-                            options["qsub_user"],
-                        ]
-                        cmd_arr += queue_opts
 
                     static_opts = [
                         "--vars",
@@ -325,12 +330,12 @@ Please add an output directory using the -o switch."""
                     ]
                     cmd_arr += static_opts
 
-                    print(f"running command {' '.join(map(str, cmd_arr))}...")
-                    sh_result = subprocess.run(cmd_arr, capture_output=True)
-                    if sh_result.returncode != 0:
-                        continue
-                    else:
-                        print("success...")
+                print(f"running command {' '.join(map(str, cmd_arr))}...")
+                sh_result = subprocess.run(cmd_arr, capture_output=True)
+                if sh_result.returncode != 0:
+                    continue
+                else:
+                    print("success...")
 
         if options["noqsub"] and options["verbose"]:
             # just print the to be run files
