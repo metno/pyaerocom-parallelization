@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import subprocess
 import sys
+from copy import deepcopy
 from pathlib import Path
 
 from aeroval_parallelize.tools import (
@@ -303,18 +304,26 @@ Please add an output directory using the -o switch."""
                 # create jobs for cache file generation first and add the wait for them to the qsub parameters
                 # add waiting for all cache file generation scriopts for now
                 # options["hold_jid"] = "create_cache_*"
-                options["hold_jid"] = cache_job_id_mask[_aeroval_file]
+                try:
+                    options["hold_jid"][_aeroval_file] = cache_job_id_mask[_aeroval_file]
+                except KeyError:
+                    options["hold_jid"] = {}
+                    options["hold_jid"][_aeroval_file] = cache_job_id_mask[_aeroval_file]
 
-            # for _aeroval_file in options["files"]:
+                # for _aeroval_file in options["files"]:
                 conf_info = get_config_info(_aeroval_file, options["cfgvar"])
                 obs_net_key = next(iter(conf_info))
-                if obs_net_key in submitted_obs_nets: #conf info always has just one key
+                if obs_net_key in submitted_obs_nets:  # conf info always has just one key
                     # Obs net could have been used before, but not necessarily all vars
                     # the following creates a list of
-                    if all(item in submitted_obs_nets[obs_net_key] for item in conf_info[obs_net_key]):
+                    if all(
+                        item in submitted_obs_nets[obs_net_key] for item in conf_info[obs_net_key]
+                    ):
                         continue
                     else:
-                        submitted_obs_nets[obs_net_key] += list(set(submitted_obs_nets[obs_net_key]) - set(conf_info[obs_net_key]))
+                        submitted_obs_nets[obs_net_key] += list(
+                            set(submitted_obs_nets[obs_net_key]) - set(conf_info[obs_net_key])
+                        )
                 else:
                     submitted_obs_nets.update(deepcopy(conf_info))
                 # TODO: add conda env  options
