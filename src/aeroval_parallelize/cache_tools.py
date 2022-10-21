@@ -10,39 +10,32 @@ import argparse
 import subprocess
 import sys
 from datetime import datetime
-from getpass import getuser
+
+# from getpass import getuser
 from pathlib import Path
 from tempfile import mkdtemp
 
-USER = getuser()
-TMP_DIR = "/tmp"
-
-QSUB_NAME = "/usr/bin/qsub"
-# qsub submission host
-QSUB_HOST = "ppi-clogin-a1.met.no"
-# directory, where the files will bew transferred before they are run
-# Needs to be on Lustre or home since /tmp is not shared between machines
-QSUB_DIR = f"/lustre/storeA/users/{USER}/submission_scripts"
-
-# user name on the qsub host
-QSUB_USER = USER
-# queue name
-QSUB_QUEUE_NAME = "research-el7.q"
-# log directory
-QSUB_LOG_DIR = "/lustre/storeA/project/aerocom/logs/aeroval_logs/"
-
-# some copy constants
-REMOTE_CP_COMMAND = ["scp", "-v"]
-CP_COMMAND = ["cp", "-v"]
+from aeroval_parallelize.const import (
+    CONDA_ENV,
+    CP_COMMAND,
+    QSUB_DIR,
+    QSUB_HOST,
+    QSUB_LOG_DIR,
+    QSUB_NAME,
+    QSUB_QUEUE_NAME,
+    QSUB_USER,
+    REMOTE_CP_COMMAND,
+    RND,
+    RUN_UUID,
+    TMP_DIR,
+    USER,
+)
 
 # script start time
 START_TIME = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-# Name of conda env to use for running the aeroval analysis
-CONDA_ENV = "pyadev-applied"
-
 # starting part of the qsub job name
-QSUB_SCRIPT_START = "create_cache"
+QSUB_SCRIPT_START = f"create_cache_{RND}"
 
 
 def write_script(

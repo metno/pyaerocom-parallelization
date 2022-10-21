@@ -15,16 +15,26 @@ import sys
 from copy import deepcopy
 from pathlib import Path
 
-from aeroval_parallelize.tools import (
-    AEROVAL_HEATMAP_FILES_MASK,
-    AEROVAL_HEATMAP_TS_FILES_MASK,
+from aeroval_parallelize.const import (
     CONDA_ENV,
+    CP_COMMAND,
     DEFAULT_CFG_VAR,
-    JSON_RUNSCRIPT,
+    QSUB_DIR,
     QSUB_HOST,
+    QSUB_LOG_DIR,
+    QSUB_NAME,
     QSUB_QUEUE_NAME,
     QSUB_USER,
+    REMOTE_CP_COMMAND,
+    RND,
+    RUN_UUID,
     TMP_DIR,
+    USER,
+)
+from aeroval_parallelize.tools import (  # CONDA_ENV,; JSON_RUNSCRIPT,; QSUB_HOST,; QSUB_QUEUE_NAME,; QSUB_USER,; TMP_DIR,; RND,; RUN_UUID,
+    AEROVAL_HEATMAP_FILES_MASK,
+    AEROVAL_HEATMAP_TS_FILES_MASK,
+    JSON_RUNSCRIPT,
     adjust_heatmapfile,
     adjust_hm_ts_file,
     adjust_menujson,

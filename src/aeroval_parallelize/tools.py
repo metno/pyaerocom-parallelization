@@ -16,6 +16,7 @@ from fnmatch import fnmatch
 from getpass import getuser
 from importlib.machinery import SourceFileLoader
 from pathlib import Path
+from random import randint
 from socket import gethostname
 from tempfile import mkdtemp
 from threading import Thread
@@ -24,33 +25,50 @@ from uuid import uuid4
 import simplejson as json
 
 from aeroval_parallelize.cache_tools import QSUB_SCRIPT_START
+from aeroval_parallelize.const import (
+    CONDA_ENV,
+    CP_COMMAND,
+    JSON_RUNSCRIPT_NAME,
+    QSUB_DIR,
+    QSUB_HOST,
+    QSUB_LOG_DIR,
+    QSUB_NAME,
+    QSUB_QUEUE_NAME,
+    QSUB_USER,
+    REMOTE_CP_COMMAND,
+    RND,
+    RUN_UUID,
+    TMP_DIR,
+    USER,
+)
 
-DEFAULT_CFG_VAR = "CFG"
-RUN_UUID = uuid4()
-HOSTNAME = gethostname()
-USER = getuser()
-TMP_DIR = "/tmp"
+# DEFAULT_CFG_VAR = "CFG"
+# RUN_UUID = uuid4()
+# RND = randint(0, 1e9)
+# HOSTNAME = gethostname()
+# USER = getuser()
+# TMP_DIR = "/tmp"
 # TMP_DIR = f"/home/{USER}/data/aeroval-local-web/data"
 
-JSON_RUNSCRIPT_NAME = "aeroval_run_json_cfg"
+# JSON_RUNSCRIPT_NAME = "aeroval_run_json_cfg"
 # qsub binary
-QSUB_NAME = "/usr/bin/qsub"
+# QSUB_NAME = "/usr/bin/qsub"
 # qsub submission host
-QSUB_HOST = "ppi-clogin-b1.met.no"
+# QSUB_HOST = "ppi-clogin-b1.met.no"
 # directory, where the files will bew transferred before they are run
 # Needs to be on Lustre or home since /tmp is not shared between machines
-QSUB_DIR = f"/lustre/storeA/users/{USER}/submission_scripts"
+# QSUB_DIR = f"/lustre/storeA/users/{USER}/submission_scripts"
 
 # user name on the qsub host
-QSUB_USER = USER
+# QSUB_USER = USER
 # queue name
-QSUB_QUEUE_NAME = "research-el7.q"
+# QSUB_QUEUE_NAME = "research-el7.q"
 # log directory
-QSUB_LOG_DIR = "/lustre/storeA/project/aerocom/logs/aeroval_logs/"
+# QSUB_LOG_DIR = "/lustre/storeA/project/aerocom/logs/aeroval_logs/"
 
 # some copy constants
-REMOTE_CP_COMMAND = ["scp", "-v"]
-CP_COMMAND = ["cp", "-v"]
+# REMOTE_CP_COMMAND = ["scp", "-v"]
+# CP_COMMAND = ["cp", "-v"]
 
 # script start time
 START_TIME = datetime.now().strftime("%Y%m%d_%H%M%S")
