@@ -15,6 +15,7 @@ import sys
 from copy import deepcopy
 from pathlib import Path
 
+from aeroval_parallelize.cache_tools import run_queue as run_queue_caching
 from aeroval_parallelize.const import (
     CONDA_ENV,
     CP_COMMAND,
@@ -312,7 +313,7 @@ Please add an output directory using the -o switch."""
             submitted_obs_nets = {}
             for _aeroval_file in runfiles:
                 # create jobs for cache file generation first and add the wait for them to the qsub parameters
-                # add waiting for all cache file generation scriopts for now
+                # add waiting for all cache file generation scripts for now
                 # options["hold_jid"] = "create_cache_*"
                 try:
                     options["hold_jid"][_aeroval_file] = cache_job_id_mask[_aeroval_file]
@@ -337,6 +338,11 @@ Please add an output directory using the -o switch."""
                 else:
                     submitted_obs_nets.update(deepcopy(conf_info))
                 # TODO: add conda env  options
+
+                # prepare data structures to call run_queue from cache_tools...
+                if not options["noqsub"]:
+                    pass
+
                 cmd_arr = [*CACHE_CREATION_CMD]
                 if options["localhost"]:
                     cmd_arr += ["-l"]

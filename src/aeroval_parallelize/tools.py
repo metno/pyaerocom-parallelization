@@ -110,7 +110,7 @@ MERGE_EXP_FILES_TO_EXCLUDE = []
 # the config file need to be merged and have a special name
 MERGE_EXP_CFG_FILES = ["cfg_*.json"]
 # Name of conda env to use for running the aeroval analysis
-CONDA_ENV = "pya_para"
+# CONDA_ENV = "pya_para"
 
 
 def prep_files(options):
@@ -263,10 +263,16 @@ def get_runfile_str(
     elif isinstance(script_name, Path):
         script_name = str(script_name)
 
+    # get the cache generation's RND value
+    if hold_pattern is not None and isinstance(hold_pattern, str):
+        rnd = hold_pattern.split("_")[1]
+    else:
+        rnd = RND
+
     # #$ -N {Path(file).stem}
     runfile_str = f"""#!/bin/bash -l
 #$ -S /bin/bash
-#$ -N {RND}_ana_{Path(file).stem}
+#$ -N pya_{rnd}_ana_{Path(file).stem}
 #$ -q {queue_name}
 #$ -pe shmem-1 1
 #$ -wd {wd}
@@ -308,7 +314,7 @@ echo "starting {file} ..." >> ${{logfile}}
 {str(JSON_RUNSCRIPT)} {str(file)} >> ${{logfile}} 2>&1
 
 """
-    return runfile_str
+    return runfile_str, rnd
 
 
 def run_queue(
@@ -365,7 +371,7 @@ def run_queue(
             qsub_run_file_name = _file.with_name(f"{_file.stem}{'.run'}")
             remote_qsub_run_file_name = Path.joinpath(qsub_tmp_dir, qsub_run_file_name.name)
             remote_json_file = Path.joinpath(qsub_tmp_dir, _file.name)
-            dummy_str = get_runfile_str(
+            dummy_str, rnd = get_runfile_str(
                 remote_json_file,
                 wd=qsub_tmp_dir,
                 script_name=remote_qsub_run_file_name,
@@ -461,7 +467,7 @@ qsub {remote_qsub_run_file_name}
             qsub_run_file_name = _file.with_name(f"{_file.stem}{'.run'}")
             remote_qsub_run_file_name = Path.joinpath(qsub_tmp_dir, qsub_run_file_name.name)
             remote_json_file = Path.joinpath(qsub_tmp_dir, _file.name)
-            dummy_str = get_runfile_str(
+            dummy_str, rnd = get_runfile_str(
                 remote_json_file,
                 wd=qsub_tmp_dir,
                 script_name=remote_qsub_run_file_name,

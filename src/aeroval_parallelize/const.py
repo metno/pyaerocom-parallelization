@@ -13,9 +13,12 @@ from random import randint
 from socket import gethostname
 from uuid import uuid4
 
+# from os import getppid
+
 DEFAULT_CFG_VAR = "CFG"
 RUN_UUID = uuid4()
 RND = randint(0, 1e9)
+# RND = getppid()
 HOSTNAME = gethostname()
 USER = getuser()
 TMP_DIR = "/tmp"
