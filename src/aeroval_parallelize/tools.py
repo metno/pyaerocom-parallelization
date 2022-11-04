@@ -263,9 +263,10 @@ def get_runfile_str(
     elif isinstance(script_name, Path):
         script_name = str(script_name)
 
+    # #$ -N {Path(file).stem}
     runfile_str = f"""#!/bin/bash -l
 #$ -S /bin/bash
-#$ -N {Path(file).stem}
+#$ -N {RND}_ana_{Path(file).stem}
 #$ -q {queue_name}
 #$ -pe shmem-1 1
 #$ -wd {wd}

@@ -35,7 +35,7 @@ from aeroval_parallelize.const import (
 START_TIME = datetime.now().strftime("%Y%m%d_%H%M%S")
 
 # starting part of the qsub job name
-QSUB_SCRIPT_START = f"create_cache_{RND}"
+QSUB_SCRIPT_START = f"{RND}_caching_"
 
 
 def write_script(
