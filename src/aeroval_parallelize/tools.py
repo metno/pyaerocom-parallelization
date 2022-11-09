@@ -120,6 +120,8 @@ def prep_files(options):
     """
     # returned list of runfiles
     runfiles = []
+    # return also the jsondirs so that the caller knows which directories to assemble together
+    json_run_dirs = []
     # dict with the run filename as key and the corresponding cache creation mask
     cache_job_id_mask = {}
 
@@ -189,6 +191,7 @@ def prep_files(options):
                     out_cfg[
                         "json_basedir"
                     ] = f"{cfg['json_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
+                    json_run_dirs.append(out_cfg["json_basedir"])
                     out_cfg[
                         "coldata_basedir"
                     ] = f"{cfg['coldata_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
@@ -211,6 +214,7 @@ def prep_files(options):
                 out_cfg[
                     "json_basedir"
                 ] = f"{cfg['json_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
+                json_run_dirs.append(out_cfg["json_basedir"])
                 out_cfg[
                     "coldata_basedir"
                 ] = f"{cfg['coldata_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
@@ -225,7 +229,7 @@ def prep_files(options):
                 if options["verbose"]:
                     print(out_cfg)
 
-    return runfiles, cache_job_id_mask
+    return runfiles, cache_job_id_mask, json_run_dirs
 
 
 def get_runfile_str(
@@ -238,7 +242,7 @@ def get_runfile_str(
     date=START_TIME,
     conda_env=CONDA_ENV,
     hold_pattern=None,
-):
+) -> str:
     """create list of strings with runfile for gridengine
 
     Parameters
@@ -307,7 +311,7 @@ echo "starting {file} ..." >> ${{logfile}}
 {str(JSON_RUNSCRIPT)} {str(file)} >> ${{logfile}} 2>&1
 
 """
-    return runfile_str, rnd
+    return runfile_str
 
 
 def run_queue(
@@ -857,6 +861,89 @@ def adjust_heatmapfile(
         print(f"updated {heatmap_file}")
 
 
+def create_assembly_job(
+    out_dir: str,
+    in_dirs: list(str),
+    job_id: str = RND,
+    qsub_host: str = QSUB_HOST,
+    qsub_cmd: str = QSUB_NAME,
+    qsub_dir: str = QSUB_DIR,
+    qsub_user: str = QSUB_USER,
+    queue_name: str = QSUB_QUEUE_NAME,
+    submit_flag: bool = False,
+    options: dict = {},
+    script_name=None,
+    wd=None,
+    mail=f"{QSUB_USER}@met.no",
+    logdir=QSUB_LOG_DIR,
+    date=START_TIME,
+    conda_env=CONDA_ENV,
+    hold_pattern=None,
+):
+    """method to create an assembly job in the PPI queue
+
+    Will wait on all other jobs of the current job ID to finish"""
+
+    if script_name is None:
+        script_name = f"pya_{job_id}_assembly.run"
+
+    if hold_pattern is None:
+        hold_pattern = f"pya_{job_id}_*"
+
+    # assembly command line
+    # aeroval_parallelize -c -o <output directory> <input directories>
+    in_dir_str = " ".join(map(str, in_dirs))
+    assembly_cmd_arr = ["aeroval_parallelize", "-c", "-o", f"{out_dir}" f"{in_dir_str}"]
+    assembly_cmd_str = " ".join(map(str, assembly_cmd_arr))
+
+    runfile_str = f"""#!/bin/bash -l
+#$ -S /bin/bash
+#$ -N pya_{job_id}_assembly
+#$ -q {queue_name}
+#$ -pe shmem-1 1
+#$ -wd {wd}
+#$ -l h_rt=96:00:00
+#$ -l s_rt=96:00:00
+"""
+    if mail is not None:
+        runfile_str += f"#$ -M {mail}\n"
+    runfile_str += f"""#$ -m abe
+#$ -l h_vmem=20G
+#$ -shell y
+#$ -j y
+#$ -o {logdir}/
+#$ -e {logdir}/
+"""
+    if hold_pattern is not None and isinstance(hold_pattern, str):
+        runfile_str += f"""#$ -hold_jid {hold_pattern}\n"""
+
+    runfile_str += f"""
+logdir="{logdir}/"
+date="{date}"
+logfile="${{logdir}}/${{USER}}.${{date}}.${{JOB_NAME}}.${{JOB_ID}}_log.txt"
+__conda_setup=$('/modules/centos7/user-apps/aerocom/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)
+if [ $? -eq 0 ]
+then eval "$__conda_setup"
+else
+  echo conda not working! exiting...
+  exit 1
+fi
+echo "Got $NSLOTS slots for job $SGE_TASK_ID." >> ${{logfile}}
+module load aerocom/anaconda3-stable >> ${{logfile}} 2>&1
+module list >> ${{logfile}} 2>&1
+conda activate {conda_env} >> ${{logfile}} 2>&1
+conda env list >> ${{logfile}} 2>&1
+set -x
+python --version >> ${{logfile}} 2>&1
+pwd >> ${{logfile}} 2>&1
+echo "starting {assembly_cmd_str} ..." >> ${{logfile}}
+{assembly_cmd_str} >> ${{logfile}} 2>&1
+
+"""
+
+    pass
+
+
 def adjust_hm_ts_file(
     ts_files: list[str | Path],
     cfg: dict = None,
@@ -908,3 +995,19 @@ def adjust_hm_ts_file(
         with open(_file, "w", encoding="utf-8") as outhandle:
             json.dump(heatmap_out_dict, outhandle, ensure_ascii=False, indent=4)
         print(f"updated {_file}")
+
+
+def create_order_job(
+    job_id: str = RND,
+    qsub_host: str = QSUB_HOST,
+    qsub_cmd: str = QSUB_NAME,
+    qsub_dir: str = QSUB_DIR,
+    qsub_user: str = QSUB_USER,
+    qsub_queue: str = QSUB_QUEUE_NAME,
+    submit_flag: bool = False,
+    options: dict = {},
+):
+    """method to create a reorder job in the PPI queue
+
+    Will wait for the assembly job to finish"""
+    pass

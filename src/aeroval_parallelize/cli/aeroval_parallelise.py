@@ -40,6 +40,7 @@ from aeroval_parallelize.tools import (  # CONDA_ENV,; JSON_RUNSCRIPT,; QSUB_HOS
     adjust_hm_ts_file,
     adjust_menujson,
     combine_output,
+    create_assembly_job,
     get_config_info,
     prep_files,
     read_config_var,
@@ -324,8 +325,8 @@ Please add an output directory using the -o switch."""
         and not options["adjustall"]
     ):
         # create aeroval config file for the queue
-        # for now one for each model and Obsntwork combination
-        runfiles, cache_job_id_mask = prep_files(options)
+        # for now one for each model and Obsnetwork combination
+        runfiles, cache_job_id_mask, json_run_dirs = prep_files(options)
         host_str = f"{options['qsub_user']}@{options['qsub_host']}"
         if not options["nocache"]:
             # CREATE CACHE
@@ -381,12 +382,17 @@ Please add an output directory using the -o switch."""
                         "--qsub-id",
                         str(rnd),
                         "--qsub-dir",
-                        options["qsub_dir"]
+                        options["qsub_dir"],
                     ]
                     cmd_arr += queue_opts
                 for obs_net in conf_info:
 
-                    static_opts = ["--vars", *conf_info[obs_net], "-o", obs_net, ]
+                    static_opts = [
+                        "--vars",
+                        *conf_info[obs_net],
+                        "-o",
+                        obs_net,
+                    ]
                     cmd_arr += static_opts
 
                 print(f"running command {' '.join(map(str, cmd_arr))}...")
@@ -403,6 +409,28 @@ Please add an output directory using the -o switch."""
             pass
         else:
             run_queue(runfiles, submit_flag=(not options["noqsub"]), options=options)
+
+            # now add jobs for data assembly and json file reordering
+            # create a data dict with the assembly directory as key and the directories to
+            # assemble as list of values
+            # assembly_paths = [Path(json_run_dirs[x]).parent for x in range(len(json_run_dirs))]
+            wds = {}
+            # the following returns a list of unique data assembly paths
+            for json_dir in json_run_dirs:
+                _dir = str(Path(json_dir).parent)
+                try:
+                    wds[_dir].append(json_dir)
+                except KeyError:
+                    wds[_dir] = []
+                    wds[_dir].append(json_dir)
+            for out_dir in wds:
+                create_assembly_job(
+                    out_dir=out_dir,
+                    in_dirs=wds[out_dir],
+                    job_id=rnd,
+                    wd=out_dir,
+                )
+                pass
 
     elif options["adjustmenujson"]:
         # adjust menu.json
@@ -451,6 +479,7 @@ Please add an output directory using the -o switch."""
         adjust_hm_ts_file(hm_ts_files, cfg=cfg)
 
     else:
+
         result = combine_output(options)
 
 
