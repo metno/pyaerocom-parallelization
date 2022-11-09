@@ -167,6 +167,14 @@ def main():
         help="do not submit to queue (all files created and copied, but no submission)",
         action="store_true",
     )
+    group_queue_opts.add_argument(
+        "--qsub-id",
+        help="id under which the qsub commands will be run. Needed only for automation.",
+    )
+    group_queue_opts.add_argument(
+        "--qsub-dir",
+        help=f"directory under which the qsub scripts will be stored. defaults to {QSUB_DIR}, needs to be on fs mounted by all queue hosts.",
+    )
 
     group_assembly = parser.add_argument_group(
         "data assembly", "options for assembly of parallisations output"
@@ -247,11 +255,25 @@ def main():
 
     if args.qsub_host:
         options["qsub_host"] = args.qsub_host
+    else:
+        options["qsub_host"] = QSUB_HOST
 
     if args.queue_user:
         options["qsub_user"] = args.queue_user
     else:
         options["qsub_user"] = QSUB_USER
+
+    if args.qsub_dir:
+        options["qsub_dir"] = args.qsub_dir
+    else:
+        options["qsub_dir"] = QSUB_DIR
+
+    if args.qsub_id:
+        options["qsub_id"] = args.qsub_id
+        rnd = options["qsub_id"]
+    else:
+        options["qsub_id"] = RND
+        rnd = RND
 
     if args.tempdir:
         options["tempdir"] = Path(args.tempdir)
@@ -356,16 +378,15 @@ Please add an output directory using the -o switch."""
                         options["qsub_queue_name"],
                         "--queue-user",
                         options["qsub_user"],
+                        "--qsub-id",
+                        rnd,
+                        "--qsub-dir",
+                        options["qsub_dir"]
                     ]
                     cmd_arr += queue_opts
                 for obs_net in conf_info:
 
-                    static_opts = [
-                        "--vars",
-                        *conf_info[obs_net],
-                        "-o",
-                        obs_net,
-                    ]
+                    static_opts = ["--vars", *conf_info[obs_net], "-o", obs_net, ]
                     cmd_arr += static_opts
 
                 print(f"running command {' '.join(map(str, cmd_arr))}...")

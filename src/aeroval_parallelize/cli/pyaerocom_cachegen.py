@@ -14,14 +14,15 @@ from tempfile import mkdtemp
 
 from aeroval_parallelize.cache_tools import (
     CONDA_ENV,
+    QSUB_DIR,
     QSUB_HOST,
     QSUB_QUEUE_NAME,
     QSUB_SCRIPT_START,
     QSUB_USER,
-    TMP_DIR,
-    run_queue,
-    write_script,
 )
+
+from aeroval_parallelize.cache_tools import RND as rnd
+from aeroval_parallelize.cache_tools import TMP_DIR, run_queue, write_script
 
 
 def main():
@@ -85,6 +86,14 @@ def main():
     )
     group_queue_opts.add_argument(
         "--qsub", help="submit to queue using the qsub command", action="store_true"
+    )
+    group_queue_opts.add_argument(
+        "--qsub-id",
+        help="id under which the qsub commands will be run. Needed only for automation.",
+    )
+    group_queue_opts.add_argument(
+        "--qsub-dir",
+        help=f"directory under which the qsub scripts will be stored. defaults to {QSUB_DIR}, needs to be on fs mounted by all queue hosts.",
     )
     # group_queue_opts.add_argument(
     #     "--dry-qsub",
@@ -164,6 +173,13 @@ def main():
     if args.queue_user:
         options["qsub_user"] = args.queue_user
 
+    if args.qsub_dir:
+        options["qsub_dir"] = args.qsub_dir
+
+    if args.qsub_id:
+        options["qsub_id"] = args.qsub_id
+        rnd = options["qsub_id"]
+
     if args.tempdir:
         options["tempdir"] = Path(args.tempdir)
 
@@ -182,13 +198,13 @@ def main():
     for obs_network in options["obsnetworks"]:
         for var in options["vars"]:
             # write python file
-            outfile = tempdir.joinpath("_".join([QSUB_SCRIPT_START, obs_network, var + ".py"]))
+            outfile = tempdir.joinpath(f"pya_{rnd}_caching_{obs_network}_{var}.py")
             write_script(outfile, var=var, obsnetwork=obs_network)
             scripts_to_run.append(outfile)
 
     if options["localhost"] or options["qsub"]:
         # run via queue, either on localhost or qsub submit host
-        run_queue(scripts_to_run, submit_flag=(options["qsub"]), options=options)
+        run_queue(scripts_to_run, submit_flag=(options["qsub"]), qsub_dir=options["qsub_dir"], options=options)
     else:
         # run serially on localhost
         for _script in scripts_to_run:

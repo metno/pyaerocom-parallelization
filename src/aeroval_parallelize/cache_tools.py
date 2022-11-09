@@ -85,7 +85,10 @@ def get_runfile_str_arr(
     elif isinstance(script_name, Path):
         script_name = str(script_name)
 
+    # $ -N pya_{rnd}_caching_{Path(file).stem}
+
     runfile_str = f"""#!/usr/bin/env bash -l
+    
 #$ -S /bin/bash
 #$ -N {Path(file).stem}
 #$ -q {queue_name}
@@ -149,6 +152,11 @@ def run_queue(
 
     qsub_tmp_dir = Path.joinpath(Path(qsub_dir), f"qsub.{runfiles[0].parts[-2]}")
 
+    try:
+        rnd = options["qsub_id"]
+    except KeyError:
+        rnd = RND
+
     # localhost_flag = False
     # if "localhost" in qsub_host or platform.node() in qsub_host:
     #     localhost_flag = True
@@ -181,7 +189,9 @@ def run_queue(
             remote_qsub_run_file_name = Path.joinpath(qsub_tmp_dir, qsub_run_file_name.name)
             remote_json_file = Path.joinpath(qsub_tmp_dir, _file.name)
             dummy_str = get_runfile_str_arr(
-                remote_json_file, wd=qsub_tmp_dir, script_name=remote_qsub_run_file_name
+                remote_json_file,
+                wd=qsub_tmp_dir,
+                script_name=remote_qsub_run_file_name,
             )
             print(f"writing file {qsub_run_file_name}")
             with open(qsub_run_file_name, "w") as f:
@@ -265,7 +275,9 @@ qsub {remote_qsub_run_file_name}
             remote_qsub_run_file_name = Path.joinpath(qsub_tmp_dir, qsub_run_file_name.name)
             remote_json_file = Path.joinpath(qsub_tmp_dir, _file.name)
             dummy_str = get_runfile_str_arr(
-                remote_json_file, wd=qsub_tmp_dir, script_name=remote_qsub_run_file_name
+                remote_json_file,
+                wd=qsub_tmp_dir,
+                script_name=remote_qsub_run_file_name,
             )
             print(f"writing file {qsub_run_file_name}")
             with open(qsub_run_file_name, "w") as f:

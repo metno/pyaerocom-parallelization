@@ -196,7 +196,7 @@ def prep_files(options):
                     outfile = Path(tempdir).joinpath(f"{cfg_file}_{_model}_{_obs_network}.json")
                     # the parallelisation is based on obs network for now only, while the cache
                     # generation runs the variables in parallel already
-                    cache_job_id_mask[outfile] = f"{QSUB_SCRIPT_START}_{pya_obsid}*"
+                    cache_job_id_mask[outfile] = f"{QSUB_SCRIPT_START}{pya_obsid}*"
                     print(f"writing file {outfile}")
                     with open(outfile, "w", encoding="utf-8") as j:
                         json.dump(out_cfg, j, ensure_ascii=False, indent=4)
@@ -216,7 +216,7 @@ def prep_files(options):
                 ] = f"{cfg['coldata_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
                 cfg_file = Path(_file).stem
                 outfile = Path(tempdir).joinpath(f"{cfg_file}_{_model}_{_obs_network}.json")
-                cache_job_id_mask[outfile] = f"{QSUB_SCRIPT_START}_{_obs_network}*"
+                cache_job_id_mask[outfile] = f"{QSUB_SCRIPT_START}{_obs_network}*"
                 print(f"writing file {outfile}")
                 with open(outfile, "w", encoding="utf-8") as j:
                     json.dump(out_cfg, j, ensure_ascii=False, indent=4)
