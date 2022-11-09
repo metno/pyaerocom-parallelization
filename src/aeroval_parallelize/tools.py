@@ -263,16 +263,9 @@ def get_runfile_str(
     elif isinstance(script_name, Path):
         script_name = str(script_name)
 
-    # get the cache generation's RND value
-    if hold_pattern is not None and isinstance(hold_pattern, str):
-        rnd = hold_pattern.split("_")[1]
-    else:
-        rnd = RND
-
-    # #$ -N {Path(file).stem}
     runfile_str = f"""#!/bin/bash -l
 #$ -S /bin/bash
-#$ -N pya_{rnd}_ana_{Path(file).stem}
+#$ -N pya_{RND}_ana_{Path(file).stem}
 #$ -q {queue_name}
 #$ -pe shmem-1 1
 #$ -wd {wd}

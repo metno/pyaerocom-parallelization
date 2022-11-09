@@ -379,7 +379,7 @@ Please add an output directory using the -o switch."""
                         "--queue-user",
                         options["qsub_user"],
                         "--qsub-id",
-                        rnd,
+                        str(rnd),
                         "--qsub-dir",
                         options["qsub_dir"]
                     ]
