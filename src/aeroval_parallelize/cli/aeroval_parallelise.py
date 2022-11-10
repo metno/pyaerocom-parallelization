@@ -409,7 +409,7 @@ Please add an output directory using the -o switch."""
             pass
         else:
             run_queue(runfiles, submit_flag=(not options["noqsub"]), options=options)
-
+            conf = read_config_var(config_file=runfiles[0], cfgvar=options["cfgvar"])
             # now add jobs for data assembly and json file reordering
             # create a data dict with the assembly directory as key and the directories to
             # assemble as list of values
@@ -417,7 +417,7 @@ Please add an output directory using the -o switch."""
             wds = {}
             # the following returns a list of unique data assembly paths
             for json_dir in json_run_dirs:
-                _dir = str(Path(json_dir).parent)
+                _dir = str(Path.joinpath(Path(json_dir).parent, conf["proj_id"], conf["exp_id"]))
                 try:
                     wds[_dir].append(json_dir)
                 except KeyError:
@@ -431,12 +431,20 @@ Please add an output directory using the -o switch."""
                     wd=out_dir,
                 )
                 qsub_start_file_name = Path.joinpath(runfiles[-1].parent, "data_merging.run")
+
+                # Now add the reordering job
+                menu_json_file = Path.joinpath(_dir, 'menu.json')
+                reorder_cmd_arr = ["aeroval_parallelize", "--adjustall", f"{options['files'][0]}", menu_json_file]
+                reorder_cmd_str = " ".join(map(str, reorder_cmd_arr))
+
+
                 with open(qsub_start_file_name, "w") as f:
                     f.write(assembly_script_str)
                 run_queue_simple(
                     [qsub_start_file_name], submit_flag=(not options["noqsub"]), options=options
                 )
-                pass
+
+
 
     elif options["adjustmenujson"]:
         # adjust menu.json

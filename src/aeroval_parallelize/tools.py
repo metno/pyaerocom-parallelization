@@ -716,7 +716,7 @@ def match_file(file: str, file_mask_array: str | list[str] = MERGE_EXP_FILES_TO_
     return ret_val
 
 
-def read_config_var(config_file: str, cfgvar: str) -> dict:
+def read_config_var(config_file: str, cfgvar: str = 'CFG') -> dict:
     """method to read the aeroval config file
 
     returns the config variable"""
@@ -906,6 +906,8 @@ def get_assembly_job_str(
     assembly_cmd_arr = ["aeroval_parallelize", "-c", "-o", f"{out_dir}", f"{in_dir_str}"]
     assembly_cmd_str = " ".join(map(str, assembly_cmd_arr))
 
+    menu_json_file = Path.joinpath(out_dir, "menu.json")
+
     runfile_str = f"""#!/bin/bash -l
 #$ -S /bin/bash
 #$ -N pya_{job_id}_assembly
@@ -948,6 +950,8 @@ python --version >> ${{logfile}} 2>&1
 pwd >> ${{logfile}} 2>&1
 echo "starting {assembly_cmd_str} ..." >> ${{logfile}}
 {assembly_cmd_str} >> ${{logfile}} 2>&1
+echo "starting {reorder_cmd_str} ..." >> ${{logfile}}
+{reorder_cmd_str} >> ${{logfile}} 2>&1
 
 """
 
