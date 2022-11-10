@@ -40,11 +40,12 @@ from aeroval_parallelize.tools import (  # CONDA_ENV,; JSON_RUNSCRIPT,; QSUB_HOS
     adjust_hm_ts_file,
     adjust_menujson,
     combine_output,
-    create_assembly_job,
+    get_assembly_job_str,
     get_config_info,
     prep_files,
     read_config_var,
     run_queue,
+    run_queue_simple,
 )
 
 CACHE_CREATION_CMD = ["pyaerocom_cachegen"]
@@ -344,7 +345,6 @@ Please add an output directory using the -o switch."""
                     options["hold_jid"] = {}
                     options["hold_jid"][_aeroval_file] = cache_job_id_mask[_aeroval_file]
 
-                # for _aeroval_file in options["files"]:
                 conf_info = get_config_info(_aeroval_file, options["cfgvar"])
                 obs_net_key = next(iter(conf_info))
                 if obs_net_key in submitted_obs_nets:  # conf info always has just one key
@@ -362,45 +362,45 @@ Please add an output directory using the -o switch."""
                     submitted_obs_nets.update(deepcopy(conf_info))
                 # TODO: add conda env  options
 
-                # prepare data structures to call run_queue from cache_tools...
-                if not options["noqsub"]:
-                    pass
-
+                # cache creation is started via the command line for simplicity
                 cmd_arr = [*CACHE_CREATION_CMD]
                 if options["localhost"]:
                     cmd_arr += ["-l"]
                 # else:
                 #     cmd_arr += [_aeroval_file, host_str]
-                if not options["noqsub"]:
-                    # append queue options
-                    queue_opts = [
-                        "--qsub",
-                        "--queue",
-                        options["qsub_queue_name"],
-                        "--queue-user",
-                        options["qsub_user"],
-                        "--qsub-id",
-                        str(rnd),
-                        "--qsub-dir",
-                        options["qsub_dir"],
-                    ]
-                    cmd_arr += queue_opts
+                # if not options["noqsub"]:
+                # append queue options
+                queue_opts = [
+                    "--qsub",
+                    "--queue",
+                    options["qsub_queue_name"],
+                    "--queue-user",
+                    options["qsub_user"],
+                    "--qsub-id",
+                    str(rnd),
+                    "--qsub-dir",
+                    options["qsub_dir"],
+                ]
+                if options["noqsub"]:
+                    queue_opts += ["--dry-qsub"]
+                cmd_arr += queue_opts
                 for obs_net in conf_info:
-
+                    cmd_tmp_arr = cmd_arr
                     static_opts = [
                         "--vars",
                         *conf_info[obs_net],
                         "-o",
                         obs_net,
                     ]
-                    cmd_arr += static_opts
+                    cmd_tmp_arr += static_opts
 
-                print(f"running command {' '.join(map(str, cmd_arr))}...")
-                sh_result = subprocess.run(cmd_arr, capture_output=True)
-                if sh_result.returncode != 0:
-                    continue
-                else:
-                    print("success...")
+                    print(f"running command {' '.join(map(str, cmd_tmp_arr))}...")
+                    sh_result = subprocess.run(cmd_tmp_arr, capture_output=True)
+                    print(f"{sh_result.stdout}")
+                    if sh_result.returncode != 0:
+                        continue
+                    else:
+                        print("success...")
 
         if options["noqsub"] and options["verbose"]:
             # just print the to be run files
@@ -424,11 +424,17 @@ Please add an output directory using the -o switch."""
                     wds[_dir] = []
                     wds[_dir].append(json_dir)
             for out_dir in wds:
-                create_assembly_job(
+                assembly_script_str = get_assembly_job_str(
                     out_dir=out_dir,
                     in_dirs=wds[out_dir],
                     job_id=rnd,
                     wd=out_dir,
+                )
+                qsub_start_file_name = Path.joinpath(runfiles[-1].parent, "data_merging.run")
+                with open(qsub_start_file_name, "w") as f:
+                    f.write(assembly_script_str)
+                run_queue_simple(
+                    [qsub_start_file_name], submit_flag=(not options["noqsub"]), options=options
                 )
                 pass
 

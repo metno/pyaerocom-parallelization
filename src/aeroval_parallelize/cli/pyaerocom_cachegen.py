@@ -19,10 +19,11 @@ from aeroval_parallelize.cache_tools import (
     QSUB_QUEUE_NAME,
     QSUB_SCRIPT_START,
     QSUB_USER,
+    RND,
+    TMP_DIR,
+    run_queue,
+    write_script,
 )
-
-from aeroval_parallelize.cache_tools import RND as rnd
-from aeroval_parallelize.cache_tools import TMP_DIR, run_queue, write_script
 
 
 def main():
@@ -95,11 +96,11 @@ def main():
         "--qsub-dir",
         help=f"directory under which the qsub scripts will be stored. defaults to {QSUB_DIR}, needs to be on fs mounted by all queue hosts.",
     )
-    # group_queue_opts.add_argument(
-    #     "--dry-qsub",
-    #     help="copy all files to qsub host, but do not submit to queue",
-    #     action="store_true",
-    # )
+    group_queue_opts.add_argument(
+        "--dry-qsub",
+        help="copy all files to qsub host, but do not submit to queue",
+        action="store_true",
+    )
     group_queue_opts.add_argument(
         "--remotetempdir",
         help=f"directory for temporary files on qsub node; defaults to {TMP_DIR}",
@@ -165,10 +166,10 @@ def main():
     if args.queue:
         options["qsub_queue_name"] = args.queue
 
-    # if args.dry_qsub:
-    #     options["dry_qsub"] = True
-    # else:
-    #     options["dry_qsub"] = False
+    if args.dry_qsub:
+        options["dry_qsub"] = True
+    else:
+        options["dry_qsub"] = False
 
     if args.queue_user:
         options["qsub_user"] = args.queue_user
@@ -179,6 +180,8 @@ def main():
     if args.qsub_id:
         options["qsub_id"] = args.qsub_id
         rnd = options["qsub_id"]
+    else:
+        rnd = RND
 
     if args.tempdir:
         options["tempdir"] = Path(args.tempdir)
@@ -204,7 +207,14 @@ def main():
 
     if options["localhost"] or options["qsub"]:
         # run via queue, either on localhost or qsub submit host
-        run_queue(scripts_to_run, submit_flag=(options["qsub"]), qsub_dir=options["qsub_dir"], options=options)
+        run_queue(
+            scripts_to_run,
+            submit_flag=(not options["dry_qsub"]),
+            qsub_dir=options["qsub_dir"],
+            options=options,
+        )
+    # elif not options["localhost"] and options["qsub"] and options["dry_qsub"]:
+    #     run_queue(scripts_to_run, submit_flag=(options["qsub"]), qsub_dir=options["qsub_dir"], options=options)
     else:
         # run serially on localhost
         for _script in scripts_to_run:
