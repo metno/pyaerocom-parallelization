@@ -716,7 +716,7 @@ def match_file(file: str, file_mask_array: str | list[str] = MERGE_EXP_FILES_TO_
     return ret_val
 
 
-def read_config_var(config_file: str, cfgvar: str = 'CFG') -> dict:
+def read_config_var(config_file: str, cfgvar: str = "CFG") -> dict:
     """method to read the aeroval config file
 
     returns the config variable"""
