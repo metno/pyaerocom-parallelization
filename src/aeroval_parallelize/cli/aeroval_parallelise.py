@@ -430,12 +430,15 @@ Please add an output directory using the -o switch."""
                     job_id=rnd,
                     wd=out_dir,
                 )
-                qsub_start_file_name = Path.joinpath(runfiles[-1].parent, "data_merging.run")
+                qsub_start_file_name = Path.joinpath(Path(runfiles[0]).parent, f"pya_{rnd}_data_merging.run")
 
                 # Now add the reordering job
-                menu_json_file = Path.joinpath(_dir, 'menu.json')
+                menu_json_file = Path.joinpath(Path(out_dir), 'menu.json')
                 reorder_cmd_arr = ["aeroval_parallelize", "--adjustall", f"{options['files'][0]}", menu_json_file]
                 reorder_cmd_str = " ".join(map(str, reorder_cmd_arr))
+
+                assembly_script_str += F"""echo "starting {reorder_cmd_str} ..." >> ${{logfile}}
+{reorder_cmd_str} >> ${{logfile}} 2>&1"""
 
 
                 with open(qsub_start_file_name, "w") as f:
