@@ -15,7 +15,6 @@ import sys
 from copy import deepcopy
 from pathlib import Path
 
-from aeroval_parallelize.cache_tools import run_queue as run_queue_caching
 from aeroval_parallelize.const import (
     CONDA_ENV,
     CP_COMMAND,
@@ -185,7 +184,7 @@ def main():
     group_assembly.add_argument(
         "-c",
         "--combinedirs",
-        help="combine the output of a parallel runs",
+        help="combine the output of a parallel runs; MUST INCLUDE <project dir>/<experiment dir>!!",
         action="store_true",
     )
     group_menujson = parser.add_argument_group(
@@ -366,9 +365,6 @@ Please add an output directory using the -o switch."""
                 cmd_arr = [*CACHE_CREATION_CMD]
                 if options["localhost"]:
                     cmd_arr += ["-l"]
-                # else:
-                #     cmd_arr += [_aeroval_file, host_str]
-                # if not options["noqsub"]:
                 # append queue options
                 queue_opts = [
                     "--qsub",
@@ -418,6 +414,8 @@ Please add an output directory using the -o switch."""
             # the following returns a list of unique data assembly paths
             for json_dir in json_run_dirs:
                 _dir = str(Path.joinpath(Path(json_dir).parent, conf["proj_id"], conf["exp_id"]))
+                # _dir = str(Path.joinpath(Path(json_dir).parent, conf["proj_id"]))
+                # _dir = str(Path(json_dir).parent)
                 try:
                     wds[_dir].append(json_dir)
                 except KeyError:
@@ -434,7 +432,8 @@ Please add an output directory using the -o switch."""
                     Path(runfiles[0]).parent, f"pya_{rnd}_data_merging.run"
                 )
 
-                # Now add the reordering job
+                # Now add the reordering job. Just add that to the pure assembly job
+                # since it's a serial operation anyway
                 menu_json_file = Path.joinpath(Path(out_dir), "menu.json")
                 reorder_cmd_arr = [
                     "aeroval_parallelize",

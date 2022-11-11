@@ -541,15 +541,15 @@ def combine_output(options: dict):
     import shutil
 
     # create outdir
-    try:
-        # remove files first
-        try:
-            shutil.rmtree(options["outdir"])
-        except FileNotFoundError:
-            pass
-        Path.mkdir(options["outdir"], exist_ok=False)
-    except FileExistsError:
-        pass
+    # try:
+    #     # remove files first
+    #     try:
+    #         shutil.rmtree(options["outdir"])
+    #     except FileNotFoundError:
+    #         pass
+    #     Path.mkdir(options["outdir"], exist_ok=False)
+    # except FileExistsError:
+    #     pass
 
     for idx, combinedir in enumerate(sorted(options["files"])):
         # tmp dirs look like this: tmpggb7k02d.0001, tmpggb7k02d.0002
@@ -566,7 +566,8 @@ def combine_output(options: dict):
                 if dir_idx == 0:
                     exp_dir = [child for child in dir.iterdir() if Path.is_dir(child)][0]
 
-                    shutil.copytree(dir, options["outdir"], dirs_exist_ok=True)
+                    # shutil.copytree(dir, options["outdir"], dirs_exist_ok=True)
+                    shutil.copytree(exp_dir, options["outdir"], dirs_exist_ok=True)
                     out_target_dir = Path.joinpath(options["outdir"], exp_dir.name)
                     # adjust config file name to cfg_<project_name>_<experiment_name>.json
                     cfg_file = out_target_dir.joinpath(
