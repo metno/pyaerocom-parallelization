@@ -84,8 +84,9 @@ def main():
     {script_name} --json_basedir /tmp/data --coldata_basedir /tmp/coldata --io_aux_file /tmp/gridded_io_aux.py <cfg-file>
 
 {colors['UNDERLINE']}assemble aeroval data after a parallel run has been finished: (runs always on the local machine){colors['END']}
+    {colors['BOLD']} The output directory needs to be the target experiment's output path ! {colors['END']}
     {script_name} -c -o <output directory> <input directories>
-    {script_name} -c -o ${{HOME}}/tmp ${{HOME}}/tmpt39n2gp_*
+    {script_name} -c -o ${{HOME}}/tmp/testing/IASI/ ${{HOME}}/tmpt39n2gp_*
 
 {colors['UNDERLINE']}adjust all variable and model orders to the one given in a aeroval config file:{colors['END']}
     {script_name} --adjustall <aeroval-cfg-file> <path to menu.json>

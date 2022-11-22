@@ -77,6 +77,8 @@ START_TIME = datetime.now().strftime("%Y%m%d_%H%M%S")
 # JSON_RUNSCRIPT = Path(Path(__file__).parent).joinpath(JSON_RUNSCRIPT_NAME)
 JSON_RUNSCRIPT = JSON_RUNSCRIPT_NAME
 
+# experiments.json
+EXPERIMENT_JSON_FILE = "experiments.json"
 # match for aeroval config file
 AEROVAL_CONFIG_FILE_MASK = ["cfg_*.json"]
 
@@ -541,15 +543,15 @@ def combine_output(options: dict):
     import shutil
 
     # create outdir
-    # try:
-    #     # remove files first
-    #     try:
-    #         shutil.rmtree(options["outdir"])
-    #     except FileNotFoundError:
-    #         pass
-    #     Path.mkdir(options["outdir"], exist_ok=False)
-    # except FileExistsError:
-    #     pass
+    try:
+        # remove files first to rempve artefacts
+        try:
+            shutil.rmtree(options["outdir"])
+        except FileNotFoundError:
+            pass
+        Path.mkdir(options["outdir"], exist_ok=False)
+    except FileExistsError:
+        pass
 
     for idx, combinedir in enumerate(sorted(options["files"])):
         # tmp dirs look like this: tmpggb7k02d.0001, tmpggb7k02d.0002
@@ -558,13 +560,23 @@ def combine_output(options: dict):
         # move the experiment to the target directory
 
         print(f"input dir: {combinedir}")
-        # {experiment_name}/experiments.json: files are identical over one parallelisation run
         if idx == 0:
             # copy first directory to options['outdir']
             for dir_idx, dir in enumerate(Path(combinedir).iterdir()):
                 # there should be just one directory. Use the 1st only anyway
                 if dir_idx == 0:
                     exp_dir = [child for child in dir.iterdir() if Path.is_dir(child)][0]
+                    # {project_name}/experiments.json: files are identical over one parallelisation run
+                    # but it might need not exist on the target ==> copy it
+                    # if it's existing, then merge with the one of the current experiment
+                    # so copy / merge experiments.json first
+                    exp_in_file = Path.joinpath(dir, EXPERIMENT_JSON_FILE)
+                    exp_out_file = Path(options["outdir"]).parent.joinpath(EXPERIMENT_JSON_FILE)
+                    if exp_out_file.exists():
+                        # merge file
+                        combine_json_files([exp_out_file, exp_in_file], exp_out_file)
+                    else:
+                        shutil.copy2(exp_in_file, exp_out_file)
 
                     # shutil.copytree(dir, options["outdir"], dirs_exist_ok=True)
                     shutil.copytree(exp_dir, options["outdir"], dirs_exist_ok=True)
@@ -598,7 +610,8 @@ def combine_output(options: dict):
                 else:
                     cmp_file = Path.joinpath(Path(*list(tmp)))
 
-                out_target_dir = Path.joinpath(options["outdir"], exp_dir.name)
+                # out_target_dir = Path.joinpath(options["outdir"], exp_dir.name)
+                out_target_dir = Path(options["outdir"])
 
                 if match_file(cmp_file, MERGE_EXP_FILES_TO_EXCLUDE):
                     # skip some files for now
