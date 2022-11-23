@@ -475,7 +475,7 @@ qsub {remote_qsub_run_file_name}
             qsub_run_file_name = _file.with_name(f"{_file.stem}{'.run'}")
             remote_qsub_run_file_name = Path.joinpath(qsub_tmp_dir, qsub_run_file_name.name)
             remote_json_file = Path.joinpath(qsub_tmp_dir, _file.name)
-            dummy_str, rnd = get_runfile_str(
+            dummy_str = get_runfile_str(
                 remote_json_file,
                 wd=qsub_tmp_dir,
                 script_name=remote_qsub_run_file_name,
