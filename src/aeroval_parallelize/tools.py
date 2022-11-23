@@ -676,7 +676,7 @@ def combine_output(options: dict):
         pass
 
 
-def combine_json_files(infiles: list[str], outfile: str):
+def combine_json_files(infiles: list[str, Path], outfile: str):
     """small helper to ingest infile into outfile"""
 
     result = {}

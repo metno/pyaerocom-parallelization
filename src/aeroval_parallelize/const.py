@@ -45,4 +45,4 @@ REMOTE_CP_COMMAND = ["scp", "-v"]
 CP_COMMAND = ["cp", "-v"]
 
 # Name of conda env to use for running the aeroval analysis
-CONDA_ENV = "pya_para"
+CONDA_ENV = "pya_para_testing"
