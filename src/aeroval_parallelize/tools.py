@@ -282,7 +282,7 @@ def get_runfile_str(
     if mail is not None:
         runfile_str += f"#$ -M {mail}\n"
     runfile_str += f"""#$ -m abe
-#$ -l h_vmem=20G
+#$ -l h_vmem=40G
 #$ -shell y
 #$ -j y
 #$ -o {logdir}/
@@ -935,7 +935,7 @@ def get_assembly_job_str(
     if mail is not None:
         runfile_str += f"#$ -M {mail}\n"
     runfile_str += f"""#$ -m abe
-#$ -l h_vmem=20G
+#$ -l h_vmem=40G
 #$ -shell y
 #$ -j y
 #$ -o {logdir}/
