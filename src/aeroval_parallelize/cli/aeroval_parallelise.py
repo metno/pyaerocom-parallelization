@@ -427,7 +427,7 @@ Please add an output directory using the -o switch."""
                     out_dir=out_dir,
                     in_dirs=wds[out_dir],
                     job_id=rnd,
-                    wd=out_dir,
+                    wd=Path(out_dir).parent.parent,
                 )
                 qsub_start_file_name = Path.joinpath(
                     Path(runfiles[0]).parent, f"pya_{rnd}_data_merging.run"
