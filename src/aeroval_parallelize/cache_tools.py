@@ -97,11 +97,12 @@ def get_runfile_str_arr(
 #$ -l h_rt=96:00:00
 #$ -l s_rt=96:00:00
 """
-
+    # $ -l h_vmem=40G
     if mail is not None:
         runfile_str += f"#$ -M {mail}\n"
     runfile_str += f"""#$ -m abe
-#$ -l h_vmem=40G
+
+#$ -l h_rss=40G,mem_free=20G
 #$ -shell y
 #$ -j y
 #$ -o {logdir}/
@@ -109,7 +110,7 @@ def get_runfile_str_arr(
 logdir="{logdir}/"
 date="{date}"
 logfile="${{logdir}}/${{USER}}.${{date}}.${{JOB_NAME}}.${{JOB_ID}}_log.txt"
-__conda_setup="$('/modules/centos7/user-apps/aerocom/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
+__conda_setup="$('/modules/rhel8/user-apps/aerocom/conda2022/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
 if [ $? -eq 0 ]
 then eval "$__conda_setup"
 else
@@ -117,7 +118,8 @@ else
   exit 1
 fi
 echo "Got $NSLOTS slots for job $SGE_TASK_ID." >> ${{logfile}}
-module load aerocom/anaconda3-stable >> ${{logfile}} 2>&1
+module use /modules/MET/rhel8/user-modules >> ${{logfile}} 2>&1
+module add aerocom/conda2022/0.1.0 >> ${{logfile}} 2>&1
 module list >> ${{logfile}} 2>&1
 conda activate {conda_env} >> ${{logfile}} 2>&1
 conda env list >> ${{logfile}} 2>&1
