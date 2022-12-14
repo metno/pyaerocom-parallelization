@@ -23,6 +23,7 @@ from aeroval_parallelize.const import (
     QSUB_LOG_DIR,
     QSUB_NAME,
     QSUB_QUEUE_NAME,
+    QSUB_SHORT_QUEUE_NAME,
     QSUB_USER,
     REMOTE_CP_COMMAND,
     RND,

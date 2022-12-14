@@ -17,6 +17,7 @@ from aeroval_parallelize.cache_tools import (
     QSUB_DIR,
     QSUB_HOST,
     QSUB_QUEUE_NAME,
+    QSUB_SHORT_QUEUE_NAME,
     QSUB_SCRIPT_START,
     QSUB_USER,
     RND,
@@ -76,8 +77,8 @@ def main():
     group_queue_opts = parser.add_argument_group("queue options", "options for running on PPI")
     group_queue_opts.add_argument(
         "--queue",
-        help=f"queue name to submit the jobs to; defaults to {QSUB_QUEUE_NAME}",
-        default=QSUB_QUEUE_NAME,
+        help=f"queue name to submit the jobs to; defaults to {QSUB_SHORT_QUEUE_NAME}",
+        default=QSUB_SHORT_QUEUE_NAME,
     )
     group_queue_opts.add_argument(
         "--qsub-host", help=f"queue submission host; defaults to {QSUB_HOST}", default=QSUB_HOST
@@ -213,6 +214,7 @@ def main():
             submit_flag=(not options["dry_qsub"]),
             qsub_dir=options["qsub_dir"],
             options=options,
+            queue_name=options["qsub_queue_name"],
         )
     # elif not options["localhost"] and options["qsub"] and options["dry_qsub"]:
     #     run_queue(scripts_to_run, submit_flag=(options["qsub"]), qsub_dir=options["qsub_dir"], options=options)
