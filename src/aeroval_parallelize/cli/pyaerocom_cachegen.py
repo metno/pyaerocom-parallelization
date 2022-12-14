@@ -214,7 +214,7 @@ def main():
             submit_flag=(not options["dry_qsub"]),
             qsub_dir=options["qsub_dir"],
             options=options,
-            queue_name=options["qsub_queue_name"],
+            qsub_queue=options["qsub_queue_name"],
         )
     # elif not options["localhost"] and options["qsub"] and options["dry_qsub"]:
     #     run_queue(scripts_to_run, submit_flag=(options["qsub"]), qsub_dir=options["qsub_dir"], options=options)
