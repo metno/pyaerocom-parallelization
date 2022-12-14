@@ -95,6 +95,7 @@ def main():
     group_queue_opts.add_argument(
         "--qsub-dir",
         help=f"directory under which the qsub scripts will be stored. defaults to {QSUB_DIR}, needs to be on fs mounted by all queue hosts.",
+        default=QSUB_DIR,
     )
     group_queue_opts.add_argument(
         "--dry-qsub",
