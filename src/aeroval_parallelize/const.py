@@ -41,6 +41,7 @@ QSUB_USER = USER
 # queue name
 # QSUB_QUEUE_NAME = "research-el7.q"
 QSUB_QUEUE_NAME = "research-r8.q"
+QSUB_SHORT_QUEUE_NAME = "researchshort-r8.q"
 # log directory
 # QSUB_LOG_DIR = "/lustre/storeA/project/aerocom/logs/aeroval_logs/"
 QSUB_LOG_DIR = "/lustre/storeB/project/aerocom/logs/aeroval_logs/"
