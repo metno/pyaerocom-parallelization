@@ -24,6 +24,7 @@ from aeroval_parallelize.const import (
     QSUB_LOG_DIR,
     QSUB_NAME,
     QSUB_QUEUE_NAME,
+    QSUB_SHORT_QUEUE_NAME,
     QSUB_USER,
     REMOTE_CP_COMMAND,
     RND,
@@ -159,6 +160,12 @@ def main():
     group_queue_opts.add_argument(
         "--queue",
         help=f"queue name to submit the jobs to; defaults to {QSUB_QUEUE_NAME}",
+        default=QSUB_QUEUE_NAME
+    )
+    group_queue_opts.add_argument(
+        "--cache_queue",
+        help=f"queue name to submit the caching jobs to; defaults to {QSUB_SHORT_QUEUE_NAME}",
+        default=QSUB_SHORT_QUEUE_NAME
     )
     group_queue_opts.add_argument(
         "--qsub-host", help=f"queue submission host; defaults to {QSUB_HOST}", default=QSUB_HOST
@@ -252,8 +259,9 @@ def main():
 
     if args.queue:
         options["qsub_queue_name"] = args.queue
-    else:
-        options["qsub_queue_name"] = QSUB_QUEUE_NAME
+
+    if args.cache_queue:
+        options["qsub_cache_queue_name"] = args.cache_queue
 
     if args.qsub_host:
         options["qsub_host"] = args.qsub_host
@@ -370,7 +378,7 @@ Please add an output directory using the -o switch."""
                 queue_opts = [
                     "--qsub",
                     "--queue",
-                    options["qsub_queue_name"],
+                    options["qsub_cache_queue_name"],
                     "--queue-user",
                     options["qsub_user"],
                     "--qsub-id",
