@@ -282,6 +282,7 @@ qsub {remote_qsub_run_file_name}
                 remote_json_file,
                 wd=qsub_tmp_dir,
                 script_name=remote_qsub_run_file_name,
+                queue_name=qsub_queue,
             )
             print(f"writing file {qsub_run_file_name}")
             with open(qsub_run_file_name, "w") as f:
