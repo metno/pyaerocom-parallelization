@@ -939,7 +939,7 @@ def get_assembly_job_str(
     if mail is not None:
         runfile_str += f"#$ -M {mail}\n"
     runfile_str += f"""#$ -m abe
-#$ -l h_vmem=40G
+#$ -l h_rss=30G,mem_free=30G
 #$ -shell y
 #$ -j y
 #$ -o {logdir}/
