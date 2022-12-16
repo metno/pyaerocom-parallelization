@@ -14,8 +14,13 @@ from tempfile import mkdtemp
 
 from aeroval_parallelize.cache_tools import (
     CONDA_ENV,
+    QSUB_DIR,
+    QSUB_HOST,
     QSUB_QUEUE_NAME,
+    QSUB_SCRIPT_START,
+    QSUB_SHORT_QUEUE_NAME,
     QSUB_USER,
+    RND,
     TMP_DIR,
     run_queue,
     write_script,
@@ -55,20 +60,8 @@ def main():
         "-e", "--env", help=f"conda env used to run the aeroval analysis; defaults to {CONDA_ENV}"
     )
     parser.add_argument(
-        "--queue", help=f"queue name to submit the jobs to; defaults to {QSUB_QUEUE_NAME}"
-    )
-    parser.add_argument("--queue-user", help=f"queue user; defaults to {QSUB_USER}")
-    parser.add_argument(
-        "--qsub", help="submit to queue using the qsub command", action="store_true"
-    )
-    parser.add_argument(
         "--tempdir",
         help=f"directory for temporary files; defaults to {TMP_DIR}",
-        default=TMP_DIR,
-    )
-    parser.add_argument(
-        "--remotetempdir",
-        help=f"directory for temporary files on qsub node; defaults to {TMP_DIR}",
         default=TMP_DIR,
     )
 
@@ -80,6 +73,40 @@ def main():
         "--printobsnetworks",
         help="just print the names of the supported obs network",
         action="store_true",
+    )
+    group_queue_opts = parser.add_argument_group("queue options", "options for running on PPI")
+    group_queue_opts.add_argument(
+        "--queue",
+        help=f"queue name to submit the jobs to; defaults to {QSUB_SHORT_QUEUE_NAME}",
+        default=QSUB_SHORT_QUEUE_NAME,
+    )
+    group_queue_opts.add_argument(
+        "--qsub-host", help=f"queue submission host; defaults to {QSUB_HOST}", default=QSUB_HOST
+    )
+    group_queue_opts.add_argument(
+        "--queue-user", help=f"queue user; defaults to {QSUB_USER}", default=QSUB_USER
+    )
+    group_queue_opts.add_argument(
+        "--qsub", help="submit to queue using the qsub command", action="store_true"
+    )
+    group_queue_opts.add_argument(
+        "--qsub-id",
+        help="id under which the qsub commands will be run. Needed only for automation.",
+    )
+    group_queue_opts.add_argument(
+        "--qsub-dir",
+        help=f"directory under which the qsub scripts will be stored. defaults to {QSUB_DIR}, needs to be on fs mounted by all queue hosts.",
+        default=QSUB_DIR,
+    )
+    group_queue_opts.add_argument(
+        "--dry-qsub",
+        help="copy all files to qsub host, but do not submit to queue",
+        action="store_true",
+    )
+    group_queue_opts.add_argument(
+        "--remotetempdir",
+        help=f"directory for temporary files on qsub node; defaults to {TMP_DIR}",
+        default=TMP_DIR,
     )
 
     args = parser.parse_args()
@@ -140,13 +167,23 @@ def main():
 
     if args.queue:
         options["qsub_queue_name"] = args.queue
+
+    if args.dry_qsub:
+        options["dry_qsub"] = True
     else:
-        options["qsub_queue_name"] = QSUB_QUEUE_NAME
+        options["dry_qsub"] = False
 
     if args.queue_user:
         options["qsub_user"] = args.queue_user
+
+    if args.qsub_dir:
+        options["qsub_dir"] = args.qsub_dir
+
+    if args.qsub_id:
+        options["qsub_id"] = args.qsub_id
+        rnd = options["qsub_id"]
     else:
-        options["qsub_user"] = QSUB_USER
+        rnd = RND
 
     if args.tempdir:
         options["tempdir"] = Path(args.tempdir)
@@ -166,14 +203,21 @@ def main():
     for obs_network in options["obsnetworks"]:
         for var in options["vars"]:
             # write python file
-            outfile = tempdir.joinpath("_".join(["create_cache", obs_network, var + ".py"]))
+            outfile = tempdir.joinpath(f"pya_{rnd}_caching_{obs_network}_{var}.py")
             write_script(outfile, var=var, obsnetwork=obs_network)
             scripts_to_run.append(outfile)
 
     if options["localhost"] or options["qsub"]:
         # run via queue, either on localhost or qsub submit host
-        pass
-        run_queue(scripts_to_run, submit_flag=(options["qsub"]), options=options)
+        run_queue(
+            scripts_to_run,
+            submit_flag=(not options["dry_qsub"]),
+            qsub_dir=options["qsub_dir"],
+            options=options,
+            qsub_queue=options["qsub_queue_name"],
+        )
+    # elif not options["localhost"] and options["qsub"] and options["dry_qsub"]:
+    #     run_queue(scripts_to_run, submit_flag=(options["qsub"]), qsub_dir=options["qsub_dir"], options=options)
     else:
         # run serially on localhost
         for _script in scripts_to_run:

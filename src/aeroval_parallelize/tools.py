@@ -16,6 +16,7 @@ from fnmatch import fnmatch
 from getpass import getuser
 from importlib.machinery import SourceFileLoader
 from pathlib import Path
+from random import randint
 from socket import gethostname
 from tempfile import mkdtemp
 from threading import Thread
@@ -23,32 +24,51 @@ from uuid import uuid4
 
 import simplejson as json
 
-DEFAULT_CFG_VAR = "CFG"
-RUN_UUID = uuid4()
-HOSTNAME = gethostname()
-USER = getuser()
-TMP_DIR = "/tmp"
+from aeroval_parallelize.cache_tools import QSUB_SCRIPT_START
+from aeroval_parallelize.const import (
+    CONDA_ENV,
+    CP_COMMAND,
+    JSON_RUNSCRIPT_NAME,
+    QSUB_DIR,
+    QSUB_HOST,
+    QSUB_LOG_DIR,
+    QSUB_NAME,
+    QSUB_QUEUE_NAME,
+    QSUB_USER,
+    REMOTE_CP_COMMAND,
+    RND,
+    RUN_UUID,
+    TMP_DIR,
+    USER,
+)
+
+# DEFAULT_CFG_VAR = "CFG"
+# RUN_UUID = uuid4()
+# RND = randint(0, 1e9)
+# HOSTNAME = gethostname()
+# USER = getuser()
+# TMP_DIR = "/tmp"
 # TMP_DIR = f"/home/{USER}/data/aeroval-local-web/data"
 
-JSON_RUNSCRIPT_NAME = "aeroval_run_json_cfg"
+# JSON_RUNSCRIPT_NAME = "aeroval_run_json_cfg"
 # qsub binary
-QSUB_NAME = "/usr/bin/qsub"
+# QSUB_NAME = "/usr/bin/qsub"
 # qsub submission host
-QSUB_HOST = "ppi-clogin-b1.met.no"
+# QSUB_HOST = "ppi-clogin-b1.met.no"
 # directory, where the files will bew transferred before they are run
 # Needs to be on Lustre or home since /tmp is not shared between machines
-QSUB_DIR = f"/lustre/storeA/users/{USER}/submission_scripts"
+# QSUB_DIR = f"/lustre/storeA/users/{USER}/submission_scripts"
 
 # user name on the qsub host
-QSUB_USER = USER
+# QSUB_USER = USER
 # queue name
-QSUB_QUEUE_NAME = "research-el7.q"
+# QSUB_QUEUE_NAME = "research-el7.q"
 # log directory
-QSUB_LOG_DIR = "/lustre/storeA/project/aerocom/logs/aeroval_logs/"
+# QSUB_LOG_DIR = "/lustre/storeA/project/aerocom/logs/aeroval_logs/"
 
 # some copy constants
-REMOTE_CP_COMMAND = ["scp", "-v"]
-CP_COMMAND = ["cp", "-v"]
+# REMOTE_CP_COMMAND = ["scp", "-v"]
+# CP_COMMAND = ["cp", "-v"]
 
 # script start time
 START_TIME = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -57,6 +77,8 @@ START_TIME = datetime.now().strftime("%Y%m%d_%H%M%S")
 # JSON_RUNSCRIPT = Path(Path(__file__).parent).joinpath(JSON_RUNSCRIPT_NAME)
 JSON_RUNSCRIPT = JSON_RUNSCRIPT_NAME
 
+# experiments.json
+EXPERIMENT_JSON_FILE = "experiments.json"
 # match for aeroval config file
 AEROVAL_CONFIG_FILE_MASK = ["cfg_*.json"]
 
@@ -90,7 +112,7 @@ MERGE_EXP_FILES_TO_EXCLUDE = []
 # the config file need to be merged and have a special name
 MERGE_EXP_CFG_FILES = ["cfg_*.json"]
 # Name of conda env to use for running the aeroval analysis
-CONDA_ENV = "pya_para"
+# CONDA_ENV = "pya_para"
 
 
 def prep_files(options):
@@ -98,7 +120,12 @@ def prep_files(options):
     return a list of files
 
     """
+    # returned list of runfiles
     runfiles = []
+    # return also the jsondirs so that the caller knows which directories to assemble together
+    json_run_dirs = []
+    # dict with the run filename as key and the corresponding cache creation mask
+    cache_job_id_mask = {}
 
     for _file in options["files"]:
         # read aeroval config file
@@ -156,6 +183,9 @@ def prep_files(options):
             if no_superobs_flag:
                 out_cfg.pop("obs_cfg", None)
                 for _obs_network in cfg["obs_cfg"]:
+                    # cache file generation works with pyaerocom's obs network names
+                    # and not the one of aeroval (those used in the web interface)
+                    pya_obsid = cfg["obs_cfg"][_obs_network]["obs_id"]
                     out_cfg["obs_cfg"] = {}
                     out_cfg["obs_cfg"][_obs_network] = cfg["obs_cfg"][_obs_network]
                     # adjust json_basedir and coldata_basedir so that the different runs
@@ -163,11 +193,15 @@ def prep_files(options):
                     out_cfg[
                         "json_basedir"
                     ] = f"{cfg['json_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
+                    json_run_dirs.append(out_cfg["json_basedir"])
                     out_cfg[
                         "coldata_basedir"
                     ] = f"{cfg['coldata_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
                     cfg_file = Path(_file).stem
                     outfile = Path(tempdir).joinpath(f"{cfg_file}_{_model}_{_obs_network}.json")
+                    # the parallelisation is based on obs network for now only, while the cache
+                    # generation runs the variables in parallel already
+                    cache_job_id_mask[outfile] = f"{QSUB_SCRIPT_START}{pya_obsid}*"
                     print(f"writing file {outfile}")
                     with open(outfile, "w", encoding="utf-8") as j:
                         json.dump(out_cfg, j, ensure_ascii=False, indent=4)
@@ -182,11 +216,14 @@ def prep_files(options):
                 out_cfg[
                     "json_basedir"
                 ] = f"{cfg['json_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
+                json_run_dirs.append(out_cfg["json_basedir"])
                 out_cfg[
                     "coldata_basedir"
                 ] = f"{cfg['coldata_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
                 cfg_file = Path(_file).stem
                 outfile = Path(tempdir).joinpath(f"{cfg_file}_{_model}_{_obs_network}.json")
+                # cache_job_id_mask[outfile] = f"{QSUB_SCRIPT_START}{_obs_network}*"
+                cache_job_id_mask[outfile] = f"{QSUB_SCRIPT_START}*"
                 print(f"writing file {outfile}")
                 with open(outfile, "w", encoding="utf-8") as j:
                     json.dump(out_cfg, j, ensure_ascii=False, indent=4)
@@ -195,7 +232,7 @@ def prep_files(options):
                 if options["verbose"]:
                     print(out_cfg)
 
-    return runfiles
+    return runfiles, cache_job_id_mask, json_run_dirs
 
 
 def get_runfile_str(
@@ -207,8 +244,22 @@ def get_runfile_str(
     logdir=QSUB_LOG_DIR,
     date=START_TIME,
     conda_env=CONDA_ENV,
-):
-    """create list of strings with runfile for gridengine"""
+    hold_pattern=None,
+) -> str:
+    """create list of strings with runfile for gridengine
+
+    Parameters
+    ----------
+    hold_pattern
+    file
+    queue_name
+    script_name
+    wd
+    mail
+    logdir
+    date
+    conda_env
+    """
     # create runfile
 
     if wd is None:
@@ -221,25 +272,33 @@ def get_runfile_str(
 
     runfile_str = f"""#!/bin/bash -l
 #$ -S /bin/bash
-#$ -N {Path(file).stem}
+#$ -N pya_{RND}_ana_{Path(file).stem}
 #$ -q {queue_name}
 #$ -pe shmem-1 1
 #$ -wd {wd}
-#$ -l h_rt=96:00:00
-#$ -l s_rt=96:00:00
+#$ -l h_rt=48:00:00
+#$ -l s_rt=48:00:00
 """
     if mail is not None:
         runfile_str += f"#$ -M {mail}\n"
+
+    # $ -l h_vmem=40G
+
     runfile_str += f"""#$ -m abe
-#$ -l h_vmem=20G
+#$ -l h_rss=30G,mem_free=30G
 #$ -shell y
 #$ -j y
 #$ -o {logdir}/
 #$ -e {logdir}/
+"""
+    if hold_pattern is not None and isinstance(hold_pattern, str):
+        runfile_str += f"""#$ -hold_jid {hold_pattern}\n"""
+
+    runfile_str += f"""
 logdir="{logdir}/"
 date="{date}"
 logfile="${{logdir}}/${{USER}}.${{date}}.${{JOB_NAME}}.${{JOB_ID}}_log.txt"
-__conda_setup=$('/modules/centos7/user-apps/aerocom/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)
+__conda_setup=$('/modules/rhel8/user-apps/aerocom/conda2022/bin/conda' 'shell.bash' 'hook' 2> /dev/null)
 if [ $? -eq 0 ]
 then eval "$__conda_setup"
 else
@@ -247,7 +306,8 @@ else
   exit 1
 fi
 echo "Got $NSLOTS slots for job $SGE_TASK_ID." >> ${{logfile}}
-module load aerocom/anaconda3-stable >> ${{logfile}} 2>&1
+module use /modules/MET/rhel8/user-modules >> ${{logfile}} 2>&1
+module add aerocom/conda2022/0.1.0 >> ${{logfile}} 2>&1
 module list >> ${{logfile}} 2>&1
 conda activate {conda_env} >> ${{logfile}} 2>&1
 conda env list >> ${{logfile}} 2>&1
@@ -277,6 +337,15 @@ def run_queue(
     # create submission file (create locally, copy to qsub host (fabric)
     # create tmp directory on submission host (fabric)
     # submit submission file to queue (fabric)
+    :param runfiles:
+    :param qsub_host:
+    :param qsub_cmd:
+    :param qsub_dir:
+    :param qsub_user:
+    :param qsub_queue:
+    :param submit_flag:
+    :param options:
+    :return:
 
     """
 
@@ -285,6 +354,10 @@ def run_queue(
     qsub_tmp_dir = Path.joinpath(Path(qsub_dir), f"qsub.{runfiles[0].parts[-2]}")
 
     for idx, _file in enumerate(runfiles):
+        try:
+            hold_pattern = options["hold_jid"][_file]
+        except KeyError:
+            hold_pattern = None
         # copy runfiles to qsub host if qsub host is not localhost
         if not options["localhost"]:
             # create tmp dir on qsub host; retain some parts
@@ -312,7 +385,10 @@ def run_queue(
             remote_qsub_run_file_name = Path.joinpath(qsub_tmp_dir, qsub_run_file_name.name)
             remote_json_file = Path.joinpath(qsub_tmp_dir, _file.name)
             dummy_str = get_runfile_str(
-                remote_json_file, wd=qsub_tmp_dir, script_name=remote_qsub_run_file_name
+                remote_json_file,
+                wd=qsub_tmp_dir,
+                script_name=remote_qsub_run_file_name,
+                hold_pattern=hold_pattern,
             )
             print(f"writing file {qsub_run_file_name}")
             with open(qsub_run_file_name, "w") as f:
@@ -405,7 +481,10 @@ qsub {remote_qsub_run_file_name}
             remote_qsub_run_file_name = Path.joinpath(qsub_tmp_dir, qsub_run_file_name.name)
             remote_json_file = Path.joinpath(qsub_tmp_dir, _file.name)
             dummy_str = get_runfile_str(
-                remote_json_file, wd=qsub_tmp_dir, script_name=remote_qsub_run_file_name
+                remote_json_file,
+                wd=qsub_tmp_dir,
+                script_name=remote_qsub_run_file_name,
+                hold_pattern=hold_pattern,
             )
             print(f"writing file {qsub_run_file_name}")
             with open(qsub_run_file_name, "w") as f:
@@ -461,6 +540,7 @@ qsub {remote_qsub_run_file_name}
             else:
                 print(f"qsub files created on localhost.")
                 print(f"you can start the job with the command: qsub {remote_qsub_run_file_name}.")
+    return True
 
 
 def combine_output(options: dict):
@@ -469,7 +549,7 @@ def combine_output(options: dict):
 
     # create outdir
     try:
-        # remove files first
+        # remove files first to rempve artefacts
         try:
             shutil.rmtree(options["outdir"])
         except FileNotFoundError:
@@ -485,15 +565,26 @@ def combine_output(options: dict):
         # move the experiment to the target directory
 
         print(f"input dir: {combinedir}")
-        # {experiment_name}/experiments.json: files are identical over one parallelisation run
         if idx == 0:
             # copy first directory to options['outdir']
             for dir_idx, dir in enumerate(Path(combinedir).iterdir()):
                 # there should be just one directory. Use the 1st only anyway
                 if dir_idx == 0:
                     exp_dir = [child for child in dir.iterdir() if Path.is_dir(child)][0]
+                    # {project_name}/experiments.json: files are identical over one parallelisation run
+                    # but it might need not exist on the target ==> copy it
+                    # if it's existing, then merge with the one of the current experiment
+                    # so copy / merge experiments.json first
+                    exp_in_file = Path.joinpath(dir, EXPERIMENT_JSON_FILE)
+                    exp_out_file = Path(options["outdir"]).parent.joinpath(EXPERIMENT_JSON_FILE)
+                    if exp_out_file.exists():
+                        # merge file
+                        combine_json_files([exp_out_file, exp_in_file], exp_out_file)
+                    else:
+                        shutil.copy2(exp_in_file, exp_out_file)
 
-                    shutil.copytree(dir, options["outdir"], dirs_exist_ok=True)
+                    # shutil.copytree(dir, options["outdir"], dirs_exist_ok=True)
+                    shutil.copytree(exp_dir, options["outdir"], dirs_exist_ok=True)
                     out_target_dir = Path.joinpath(options["outdir"], exp_dir.name)
                     # adjust config file name to cfg_<project_name>_<experiment_name>.json
                     cfg_file = out_target_dir.joinpath(
@@ -524,7 +615,8 @@ def combine_output(options: dict):
                 else:
                     cmp_file = Path.joinpath(Path(*list(tmp)))
 
-                out_target_dir = Path.joinpath(options["outdir"], exp_dir.name)
+                # out_target_dir = Path.joinpath(options["outdir"], exp_dir.name)
+                out_target_dir = Path(options["outdir"])
 
                 if match_file(cmp_file, MERGE_EXP_FILES_TO_EXCLUDE):
                     # skip some files for now
@@ -589,7 +681,7 @@ def combine_output(options: dict):
         pass
 
 
-def combine_json_files(infiles: list[str], outfile: str):
+def combine_json_files(infiles: list[str, Path], outfile: str):
     """small helper to ingest infile into outfile"""
 
     result = {}
@@ -643,7 +735,7 @@ def match_file(file: str, file_mask_array: str | list[str] = MERGE_EXP_FILES_TO_
     return ret_val
 
 
-def read_config_var(config_file: str, cfgvar: str) -> dict:
+def read_config_var(config_file: str, cfgvar: str = "CFG") -> dict:
     """method to read the aeroval config file
 
     returns the config variable"""
@@ -665,6 +757,33 @@ exiting now..."""
         print(msg)
         sys.exit(1)
     return cfg
+
+
+def get_config_info(
+    config_file: str,
+    cfgvar: str,
+    cfg: dict = None,
+) -> dict:
+    """method to return the used observations and variables in formatted way
+
+    returns a dict with the obs network name as key and the corresponding variables values"""
+
+    if not cfg:
+        cfg = read_config_var(config_file=config_file, cfgvar=cfgvar)
+
+    var_config = {}
+    for _obs_network in cfg["obs_cfg"]:
+        try:
+            if cfg["obs_cfg"][_obs_network]["is_superobs"]:
+                continue
+        except KeyError:
+            pass
+
+        var_config[cfg["obs_cfg"][_obs_network]["obs_id"]] = cfg["obs_cfg"][_obs_network][
+            "obs_vars"
+        ]
+
+    return var_config
 
 
 def adjust_menujson(
@@ -771,6 +890,92 @@ def adjust_heatmapfile(
         print(f"updated {heatmap_file}")
 
 
+def get_assembly_job_str(
+    out_dir: str,
+    in_dirs: list(str),
+    job_id: str = RND,
+    qsub_host: str = QSUB_HOST,
+    qsub_cmd: str = QSUB_NAME,
+    qsub_dir: str = QSUB_DIR,
+    qsub_user: str = QSUB_USER,
+    queue_name: str = QSUB_QUEUE_NAME,
+    submit_flag: bool = False,
+    options: dict = {},
+    script_name=None,
+    wd=None,
+    mail=f"{QSUB_USER}@met.no",
+    logdir=QSUB_LOG_DIR,
+    date=START_TIME,
+    conda_env=CONDA_ENV,
+    hold_pattern=None,
+):
+    """method to create an assembly job in the PPI queue
+
+    Will wait on all other jobs of the current job ID to finish"""
+
+    if script_name is None:
+        script_name = f"pya_{job_id}_assembly.run"
+
+    if hold_pattern is None:
+        hold_pattern = f"pya_{job_id}_*"
+
+    # assembly command line
+    # aeroval_parallelize -c -o <output directory> <input directories>
+    in_dir_str = " ".join(map(str, in_dirs))
+    assembly_cmd_arr = ["aeroval_parallelize", "-c", "-o", f"{out_dir}", f"{in_dir_str}"]
+    assembly_cmd_str = " ".join(map(str, assembly_cmd_arr))
+
+    menu_json_file = Path.joinpath(Path(out_dir), "menu.json")
+
+    runfile_str = f"""#!/bin/bash -l
+#$ -S /bin/bash
+#$ -N pya_{job_id}_assembly
+#$ -q {queue_name}
+#$ -pe shmem-1 1
+#$ -wd {wd}
+#$ -l h_rt=4:00:00
+#$ -l s_rt=4:00:00
+"""
+    if mail is not None:
+        runfile_str += f"#$ -M {mail}\n"
+    runfile_str += f"""#$ -m abe
+#$ -l h_rss=30G,mem_free=30G
+#$ -shell y
+#$ -j y
+#$ -o {logdir}/
+#$ -e {logdir}/
+"""
+    if hold_pattern is not None and isinstance(hold_pattern, str):
+        runfile_str += f"""#$ -hold_jid {hold_pattern}\n"""
+
+    runfile_str += f"""
+logdir="{logdir}/"
+date="{date}"
+logfile="${{logdir}}/${{USER}}.${{date}}.${{JOB_NAME}}.${{JOB_ID}}_log.txt"
+__conda_setup=$('/modules/rhel8/user-apps/aerocom/conda2022/bin/conda' 'shell.bash' 'hook' 2> /dev/null)
+if [ $? -eq 0 ]
+then eval "$__conda_setup"
+else
+  echo conda not working! exiting...
+  exit 1
+fi
+echo "Got $NSLOTS slots for job $SGE_TASK_ID." >> ${{logfile}}
+module use /modules/MET/rhel8/user-modules >> ${{logfile}} 2>&1
+module add aerocom/conda2022/0.1.0 >> ${{logfile}} 2>&1
+module list >> ${{logfile}} 2>&1
+conda activate {conda_env} >> ${{logfile}} 2>&1
+conda env list >> ${{logfile}} 2>&1
+set -x
+python --version >> ${{logfile}} 2>&1
+pwd >> ${{logfile}} 2>&1
+echo "starting {assembly_cmd_str} ..." >> ${{logfile}}
+{assembly_cmd_str} >> ${{logfile}} 2>&1
+
+"""
+
+    return runfile_str
+
+
 def adjust_hm_ts_file(
     ts_files: list[str | Path],
     cfg: dict = None,
@@ -822,3 +1027,190 @@ def adjust_hm_ts_file(
         with open(_file, "w", encoding="utf-8") as outhandle:
             json.dump(heatmap_out_dict, outhandle, ensure_ascii=False, indent=4)
         print(f"updated {_file}")
+
+
+def create_order_job(
+    job_id: str = RND,
+    qsub_host: str = QSUB_HOST,
+    qsub_cmd: str = QSUB_NAME,
+    qsub_dir: str = QSUB_DIR,
+    qsub_user: str = QSUB_USER,
+    qsub_queue: str = QSUB_QUEUE_NAME,
+    submit_flag: bool = False,
+    options: dict = {},
+):
+    """method to create a reorder job in the PPI queue
+
+    Will wait for the assembly job to finish"""
+    pass
+
+
+def run_queue_simple(
+    runfiles: list[Path],
+    qsub_host: str = QSUB_HOST,
+    qsub_cmd: str = QSUB_NAME,
+    qsub_dir: str = QSUB_DIR,
+    qsub_user: str = QSUB_USER,
+    qsub_queue: str = QSUB_QUEUE_NAME,
+    submit_flag: bool = False,
+    options: dict = {},
+):
+    """submit already prepared runfiles to the remote cluster
+
+    # copy runfile to qsub host (subprocess.run)
+    # create tmp directory on submission host
+    # submit submission file to queue
+    :param runfiles:
+    :param qsub_host:
+    :param qsub_cmd:
+    :param qsub_dir:
+    :param qsub_user:
+    :param qsub_queue:
+    :param submit_flag:
+    :param options:
+    :return:
+
+    """
+
+    import subprocess
+
+    qsub_tmp_dir = Path.joinpath(Path(qsub_dir), f"qsub.{runfiles[0].parts[-2]}")
+
+    for idx, _file in enumerate(runfiles):
+        # copy runfiles to qsub host if qsub host is not localhost
+        if not options["localhost"]:
+            # create tmp dir on qsub host; retain some parts
+            host_str = f"{qsub_user}@{qsub_host}"
+            if idx == 0:
+                cmd_arr = ["ssh", host_str, "mkdir", "-p", qsub_tmp_dir]
+                print(f"running command {' '.join(map(str, cmd_arr))}...")
+                sh_result = subprocess.run(cmd_arr, capture_output=True)
+                if sh_result.returncode != 0:
+                    continue
+                else:
+                    print("success...")
+
+            # copy runfile to qsub host
+            host_str = f"{qsub_user}@{qsub_host}:{qsub_tmp_dir}/"
+            cmd_arr = [*REMOTE_CP_COMMAND, _file, host_str]
+            print(f"running command {' '.join(map(str, cmd_arr))}...")
+            sh_result = subprocess.run(cmd_arr, capture_output=True)
+            if sh_result.returncode != 0:
+                continue
+            else:
+                print("success...")
+
+            # run qsub
+            # unfortunatly qsub can't be run directly for some reason (likely security)
+            # create a script with the qsub call and start that
+            host_str = f"{qsub_user}@{qsub_host}:{qsub_tmp_dir}/"
+            qsub_start_file_name = _file.with_name(f"{_file.stem}{'.sh'}")
+            remote_qsub_run_file_name = Path.joinpath(qsub_tmp_dir, _file.name)
+            remote_qsub_start_file_name = Path.joinpath(qsub_tmp_dir, qsub_start_file_name.name)
+            # this does not work:
+            # cmd_arr = ["ssh", host_str, "/usr/bin/bash", "-l", "qsub", remote_qsub_run_file_name]
+            # use bash script as workaround
+            start_script_str = f"""#!/bin/bash -l
+qsub {remote_qsub_run_file_name}
+
+"""
+            with open(qsub_start_file_name, "w") as f:
+                f.write(start_script_str)
+            cmd_arr = [*REMOTE_CP_COMMAND, qsub_start_file_name, host_str]
+            if submit_flag:
+                print(f"running command {' '.join(map(str, cmd_arr))}...")
+                sh_result = subprocess.run(cmd_arr, capture_output=True)
+                if sh_result.returncode != 0:
+                    continue
+                else:
+                    print("success...")
+
+                host_str = f"{qsub_user}@{qsub_host}"
+                cmd_arr = [
+                    "ssh",
+                    host_str,
+                    "/usr/bin/bash",
+                    "-l",
+                    remote_qsub_start_file_name,
+                ]
+                print(f"running command {' '.join(map(str, cmd_arr))}...")
+                sh_result = subprocess.run(cmd_arr, capture_output=True)
+                if sh_result.returncode != 0:
+                    print(f"return code: {sh_result.returncode}")
+                    print(f"{sh_result.stderr}")
+                    continue
+                else:
+                    print("success...")
+                    print(f"{sh_result.stdout}")
+
+            else:
+                print(f"qsub files created and copied to {qsub_host}.")
+                print(
+                    f"you can start the job with the command: qsub {remote_qsub_run_file_name} on the host {qsub_host}."
+                )
+
+        else:
+            # localhost flag is set
+            # scripts exist already, but in /tmp where the queue nodes can't read them
+            # copy to submission directories
+            # create tmp dir on qsub host; retain some parts
+            if idx == 0:
+                cmd_arr = ["mkdir", "-p", qsub_tmp_dir]
+                print(f"running command {' '.join(map(str, cmd_arr))}...")
+                sh_result = subprocess.run(cmd_arr, capture_output=True)
+                if sh_result.returncode != 0:
+                    continue
+                else:
+                    print("success...")
+
+            # copy runfile to cluster readable location
+            host_str = f"{qsub_tmp_dir}/"
+            cmd_arr = [*CP_COMMAND, _file, host_str]
+            print(f"running command {' '.join(map(str, cmd_arr))}...")
+            sh_result = subprocess.run(cmd_arr, capture_output=True)
+            if sh_result.returncode != 0:
+                continue
+            else:
+                print("success...")
+
+            # run qsub
+            # unfortunatly qsub can't be run directly for some reason (likely security)
+            # create a script with the qsub call and start that
+            host_str = f"{qsub_tmp_dir}/"
+            qsub_start_file_name = _file.with_name(f"{_file.stem}{'.sh'}")
+            remote_qsub_run_file_name = Path.joinpath(qsub_tmp_dir, _file.name)
+            remote_qsub_start_file_name = Path.joinpath(qsub_tmp_dir, qsub_start_file_name.name)
+            # this does not work:
+            # cmd_arr = ["ssh", host_str, "/usr/bin/bash", "-l", "qsub", remote_qsub_run_file_name]
+            # use bash script as workaround
+            start_script_str = f"""#!/bin/bash -l
+qsub {remote_qsub_run_file_name}
+
+"""
+            with open(qsub_start_file_name, "w") as f:
+                f.write(start_script_str)
+            cmd_arr = [*CP_COMMAND, qsub_start_file_name, host_str]
+            if submit_flag:
+                print(f"running command {' '.join(map(str, cmd_arr))}...")
+                sh_result = subprocess.run(cmd_arr, capture_output=True)
+                if sh_result.returncode != 0:
+                    continue
+                else:
+                    print("success...")
+
+                host_str = f"{qsub_user}@{qsub_host}"
+                cmd_arr = ["/usr/bin/bash", "-l", remote_qsub_start_file_name]
+                print(f"running command {' '.join(map(str, cmd_arr))}...")
+                sh_result = subprocess.run(cmd_arr, capture_output=True)
+                if sh_result.returncode != 0:
+                    print(f"return code: {sh_result.returncode}")
+                    print(f"{sh_result.stderr}")
+                    continue
+                else:
+                    print("success...")
+                    print(f"{sh_result.stdout}")
+
+            else:
+                print(f"qsub files created on localhost.")
+                print(f"you can start the job with the command: qsub {remote_qsub_run_file_name}.")
+    return True

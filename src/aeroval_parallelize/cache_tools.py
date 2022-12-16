@@ -10,36 +10,33 @@ import argparse
 import subprocess
 import sys
 from datetime import datetime
-from getpass import getuser
+
+# from getpass import getuser
 from pathlib import Path
 from tempfile import mkdtemp
 
-USER = getuser()
-TMP_DIR = "/tmp"
-
-QSUB_NAME = "/usr/bin/qsub"
-# qsub submission host
-QSUB_HOST = "ppi-clogin-a1.met.no"
-# directory, where the files will bew transferred before they are run
-# Needs to be on Lustre or home since /tmp is not shared between machines
-QSUB_DIR = f"/lustre/storeA/users/{USER}/submission_scripts"
-
-# user name on the qsub host
-QSUB_USER = USER
-# queue name
-QSUB_QUEUE_NAME = "research-el7.q"
-# log directory
-QSUB_LOG_DIR = "/lustre/storeA/project/aerocom/logs/aeroval_logs/"
-
-# some copy constants
-REMOTE_CP_COMMAND = ["scp", "-v"]
-CP_COMMAND = ["cp", "-v"]
+from aeroval_parallelize.const import (
+    CONDA_ENV,
+    CP_COMMAND,
+    QSUB_DIR,
+    QSUB_HOST,
+    QSUB_LOG_DIR,
+    QSUB_NAME,
+    QSUB_QUEUE_NAME,
+    QSUB_SHORT_QUEUE_NAME,
+    QSUB_USER,
+    REMOTE_CP_COMMAND,
+    RND,
+    RUN_UUID,
+    TMP_DIR,
+    USER,
+)
 
 # script start time
 START_TIME = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-# Name of conda env to use for running the aeroval analysis
-CONDA_ENV = "pyadev-applied"
+# starting part of the qsub job name
+QSUB_SCRIPT_START = f"pya_{RND}_caching_"
 
 
 def write_script(
@@ -89,20 +86,24 @@ def get_runfile_str_arr(
     elif isinstance(script_name, Path):
         script_name = str(script_name)
 
+    # $ -N pya_{rnd}_caching_{Path(file).stem}
+
     runfile_str = f"""#!/usr/bin/env bash -l
+    
 #$ -S /bin/bash
 #$ -N {Path(file).stem}
 #$ -q {queue_name}
 #$ -pe shmem-1 1
 #$ -wd {wd}
-#$ -l h_rt=96:00:00
-#$ -l s_rt=96:00:00
+#$ -l h_rt=2:00:00
+#$ -l s_rt=2:00:00
 """
-
+    # $ -l h_vmem=40G
     if mail is not None:
         runfile_str += f"#$ -M {mail}\n"
     runfile_str += f"""#$ -m abe
-#$ -l h_vmem=20G
+
+#$ -l h_rss=30G,mem_free=30G
 #$ -shell y
 #$ -j y
 #$ -o {logdir}/
@@ -110,7 +111,7 @@ def get_runfile_str_arr(
 logdir="{logdir}/"
 date="{date}"
 logfile="${{logdir}}/${{USER}}.${{date}}.${{JOB_NAME}}.${{JOB_ID}}_log.txt"
-__conda_setup="$('/modules/centos7/user-apps/aerocom/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
+__conda_setup="$('/modules/rhel8/user-apps/aerocom/conda2022/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
 if [ $? -eq 0 ]
 then eval "$__conda_setup"
 else
@@ -118,7 +119,8 @@ else
   exit 1
 fi
 echo "Got $NSLOTS slots for job $SGE_TASK_ID." >> ${{logfile}}
-module load aerocom/anaconda3-stable >> ${{logfile}} 2>&1
+module use /modules/MET/rhel8/user-modules >> ${{logfile}} 2>&1
+module add aerocom/conda2022/0.1.0 >> ${{logfile}} 2>&1
 module list >> ${{logfile}} 2>&1
 conda activate {conda_env} >> ${{logfile}} 2>&1
 conda env list >> ${{logfile}} 2>&1
@@ -153,6 +155,11 @@ def run_queue(
 
     qsub_tmp_dir = Path.joinpath(Path(qsub_dir), f"qsub.{runfiles[0].parts[-2]}")
 
+    try:
+        rnd = options["qsub_id"]
+    except KeyError:
+        rnd = RND
+
     # localhost_flag = False
     # if "localhost" in qsub_host or platform.node() in qsub_host:
     #     localhost_flag = True
@@ -185,7 +192,10 @@ def run_queue(
             remote_qsub_run_file_name = Path.joinpath(qsub_tmp_dir, qsub_run_file_name.name)
             remote_json_file = Path.joinpath(qsub_tmp_dir, _file.name)
             dummy_str = get_runfile_str_arr(
-                remote_json_file, wd=qsub_tmp_dir, script_name=remote_qsub_run_file_name
+                remote_json_file,
+                wd=qsub_tmp_dir,
+                script_name=remote_qsub_run_file_name,
+                queue_name=qsub_queue,
             )
             print(f"writing file {qsub_run_file_name}")
             with open(qsub_run_file_name, "w") as f:
@@ -269,7 +279,10 @@ qsub {remote_qsub_run_file_name}
             remote_qsub_run_file_name = Path.joinpath(qsub_tmp_dir, qsub_run_file_name.name)
             remote_json_file = Path.joinpath(qsub_tmp_dir, _file.name)
             dummy_str = get_runfile_str_arr(
-                remote_json_file, wd=qsub_tmp_dir, script_name=remote_qsub_run_file_name
+                remote_json_file,
+                wd=qsub_tmp_dir,
+                script_name=remote_qsub_run_file_name,
+                queue_name=qsub_queue,
             )
             print(f"writing file {qsub_run_file_name}")
             with open(qsub_run_file_name, "w") as f:
