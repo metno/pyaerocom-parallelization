@@ -960,8 +960,8 @@ else
   exit 1
 fi
 echo "Got $NSLOTS slots for job $SGE_TASK_ID." >> ${{logfile}}
-module use /modules/MET/rhel8/user-modules >> ${logfile} 2>&1
-module add aerocom/conda2022/0.1.0 >> ${logfile} 2>&1
+module use /modules/MET/rhel8/user-modules >> ${{logfile}} 2>&1
+module add aerocom/conda2022/0.1.0 >> ${{logfile}} 2>&1
 module list >> ${{logfile}} 2>&1
 conda activate {conda_env} >> ${{logfile}} 2>&1
 conda env list >> ${{logfile}} 2>&1
