@@ -160,12 +160,12 @@ def main():
     group_queue_opts.add_argument(
         "--queue",
         help=f"queue name to submit the jobs to; defaults to {QSUB_QUEUE_NAME}",
-        default=QSUB_QUEUE_NAME
+        default=QSUB_QUEUE_NAME,
     )
     group_queue_opts.add_argument(
         "--cache_queue",
         help=f"queue name to submit the caching jobs to; defaults to {QSUB_SHORT_QUEUE_NAME}",
-        default=QSUB_SHORT_QUEUE_NAME
+        default=QSUB_SHORT_QUEUE_NAME,
     )
     group_queue_opts.add_argument(
         "--qsub-host", help=f"queue submission host; defaults to {QSUB_HOST}", default=QSUB_HOST
@@ -444,7 +444,7 @@ Please add an output directory using the -o switch."""
                 # Now add the reordering job. Just add that to the pure assembly job
                 # since it's a serial operation anyway
                 menu_json_file = Path.joinpath(Path(out_dir), "menu.json")
-                aeroval_config_file = Path(options['files'][0]).resolve()
+                aeroval_config_file = Path(options["files"][0]).resolve()
                 reorder_cmd_arr = [
                     "aeroval_parallelize",
                     "--adjustall",
