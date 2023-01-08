@@ -549,10 +549,11 @@ def combine_output(options: dict):
 
     # create outdir
     try:
-        # remove files first to rempve artefacts
+        # remove files first to remove artefacts
+        # TODO: This might not always what we want to do (merging of different runs)
         try:
             shutil.rmtree(options["outdir"])
-        except FileNotFoundError:
+        except (FileNotFoundError, OSError):
             pass
         Path.mkdir(options["outdir"], exist_ok=False)
     except FileExistsError:
@@ -565,6 +566,7 @@ def combine_output(options: dict):
         # move the experiment to the target directory
 
         print(f"input dir: {combinedir}")
+        # The following is not always wanted since we might want to add some data to an existing experiment
         if idx == 0:
             # copy first directory to options['outdir']
             for dir_idx, dir in enumerate(Path(combinedir).iterdir()):
@@ -607,7 +609,9 @@ def combine_output(options: dict):
             # cfg_testing_IASI.json  contour  hm  map  menu.json  ranges.json  regions.json  scat  statistics.json  ts
             inpath = Path(combinedir).joinpath(*list(exp_dir.parts[-2:]))
             inpath_dir_len = len(inpath.parts)
-            for file_idx, _file in enumerate(sorted(inpath.glob("**/*.*json"))):
+            files = sorted(inpath.glob("**/*.*json"))
+            # for file_idx, _file in enumerate(sorted(inpath.glob("**/*.*json"))):
+            for file_idx, _file in enumerate(files):
                 # determine if file is in inpath or below
                 tmp = _file.parts[inpath_dir_len:]
                 if len(tmp) == 1:
@@ -627,15 +631,15 @@ def combine_output(options: dict):
                     # file names need to be adjusted
                     cfg_file = inpath.joinpath(f"cfg_{inpath.parts[-2]}_{inpath.parts[-1]}.json")
                     outfile = out_target_dir.joinpath(
-                        f"cfg_{options['outdir'].parts[-1]}_{inpath.parts[-1]}.json"
+                        f"cfg_{options['outdir'].parts[-2]}_{inpath.parts[-1]}.json"
                     )
                     if outfile.exists():
-                        # sould always fire since we handle the 1st directory above
-                        infiles = [cfg_file, outfile]
+                        # should always fire since we handle the 1st directory above
+                        infiles = [_file, outfile]
                         print(f"writing combined json file {outfile}...")
-                        t = Thread(target=combine_json_files, args=(infiles, outfile))
-                        t.start()
-                        # combine_json_files(infiles, outfile)
+                        # t = Thread(target=combine_json_files, args=(infiles, outfile))
+                        # t.start()
+                        combine_json_files(infiles, outfile)
                         # TODO:
                         #  probably Adjust {
                         #   "proj_info": {
