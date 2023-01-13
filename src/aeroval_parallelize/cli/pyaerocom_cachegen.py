@@ -145,8 +145,13 @@ def main():
             const.MARCO_POLO_NAME,
             const.AIR_NOW_NAME,
         ]
+        # since the IPCForest data is not in main-dev branch yet
+        try:
+            supported_obs_networks += [const.IPCFORESTS_NAME]
+        except AttributeError:
+            pass
 
-        print(f"supported observational networks:" f"{supported_obs_networks}")
+        print(f"supported observational networks:\n", *sorted(supported_obs_networks), sep="\n")
         sys.exit(0)
 
     if args.obsnetworks:
