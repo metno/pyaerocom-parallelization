@@ -425,11 +425,9 @@ Please add an output directory using the -o switch."""
             # just print the to be run files
             for _runfile in runfiles:
                 print(f"created {_runfile}")
-            pass
         elif options["cachegen_only"]:
             print("cache file generation only was requested. Exiting.")
             return
-
         else:
             run_queue(runfiles, submit_flag=(not options["noqsub"]), options=options)
             conf = read_config_var(config_file=runfiles[0], cfgvar=options["cfgvar"])
