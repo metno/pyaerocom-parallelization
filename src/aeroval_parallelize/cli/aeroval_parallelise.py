@@ -382,12 +382,13 @@ Please add an output directory using the -o switch."""
                         )
                 else:
                     submitted_obs_nets.update(deepcopy(conf_info))
-                # TODO: add conda env  options
 
                 # cache creation is started via the command line for simplicity
                 cmd_arr = [*CACHE_CREATION_CMD]
                 if options["localhost"]:
                     cmd_arr += ["-l"]
+                if options["conda_env_name"]:
+                    cmd_arr += ["-e", options["conda_env_name"]]
                 # append queue options
                 queue_opts = [
                     "--qsub",
