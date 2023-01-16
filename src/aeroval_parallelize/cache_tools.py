@@ -196,6 +196,7 @@ def run_queue(
                 wd=qsub_tmp_dir,
                 script_name=remote_qsub_run_file_name,
                 queue_name=qsub_queue,
+                conda_env=options["conda_env_name"],
             )
             print(f"writing file {qsub_run_file_name}")
             with open(qsub_run_file_name, "w") as f:
@@ -283,6 +284,7 @@ qsub {remote_qsub_run_file_name}
                 wd=qsub_tmp_dir,
                 script_name=remote_qsub_run_file_name,
                 queue_name=qsub_queue,
+                conda_env=options["conda_env_name"],
             )
             print(f"writing file {qsub_run_file_name}")
             with open(qsub_run_file_name, "w") as f:
