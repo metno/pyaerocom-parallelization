@@ -108,6 +108,10 @@ def main():
         help=f"directory for temporary files on qsub node; defaults to {TMP_DIR}",
         default=TMP_DIR,
     )
+    group_queue_opts.add_argument(
+        "-s", "--submission-dir",
+        help=f"directory submission scripts",
+    )
 
     args = parser.parse_args()
     options = {}
@@ -203,8 +207,9 @@ def main():
 
     # generate cache files locally
     scripts_to_run = []
-    # create tmp dir
+    # create tmp dir if needed
     tempdir = Path(mkdtemp(dir=options["tempdir"]))
+
     for obs_network in options["obsnetworks"]:
         for var in options["vars"]:
             # write python file

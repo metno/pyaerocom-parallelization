@@ -10,6 +10,7 @@ command line interface for parallelisation for aeroval processing
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 import sys
 from copy import deepcopy
@@ -349,7 +350,7 @@ Please add an output directory using the -o switch."""
     ):
         # create aeroval config file for the queue
         # for now one for each model and Obsnetwork combination
-        runfiles, cache_job_id_mask, json_run_dirs = prep_files(options)
+        runfiles, cache_job_id_mask, json_run_dirs, tempdir = prep_files(options)
         host_str = f"{options['qsub_user']}@{options['qsub_host']}"
         if not options["nocache"]:
             # CREATE CACHE
@@ -387,7 +388,7 @@ Please add an output directory using the -o switch."""
                 cmd_arr = [*CACHE_CREATION_CMD]
                 if options["localhost"]:
                     cmd_arr += ["-l"]
-                if options["conda_env_name"]:
+                if "conda_env_name" in options:
                     cmd_arr += ["-e", options["conda_env_name"]]
                 # append queue options
                 queue_opts = [
@@ -399,7 +400,10 @@ Please add an output directory using the -o switch."""
                     "--qsub-id",
                     str(rnd),
                     "--qsub-dir",
-                    options["qsub_dir"],
+                    # emulates the qsub tempdir from the later run_queue method
+                    # the goal is to use always just one qsub directory for the cache
+                    # file generation and the aeroval parallelization
+                    os.path.join(options["qsub_dir"], f"qsub.{Path(tempdir).parts[-1]}"),
                 ]
                 if options["noqsub"]:
                     queue_opts += ["--dry-qsub"]

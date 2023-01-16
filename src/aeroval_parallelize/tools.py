@@ -127,6 +127,9 @@ def prep_files(options):
     # dict with the run filename as key and the corresponding cache creation mask
     cache_job_id_mask = {}
 
+    # create tmp dir
+    tempdir = mkdtemp(dir=options["tempdir"])
+
     for _file in options["files"]:
         # read aeroval config file
         if fnmatch(_file, "*.py"):
@@ -143,8 +146,6 @@ def prep_files(options):
             print(f"skipping file {_file} due to wrong file extension")
             continue
 
-        # create tmp dir
-        tempdir = mkdtemp(dir=options["tempdir"])
 
         # make some adjustments to the config file
         # e.g. adjust the json_basedir and the coldata_basedir entries
@@ -233,7 +234,7 @@ def prep_files(options):
                 if options["verbose"]:
                     print(out_cfg)
 
-    return runfiles, cache_job_id_mask, json_run_dirs
+    return runfiles, cache_job_id_mask, json_run_dirs, tempdir
 
 
 def get_runfile_str(
