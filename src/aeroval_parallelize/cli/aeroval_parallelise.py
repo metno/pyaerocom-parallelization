@@ -76,6 +76,9 @@ def main():
 {colors['UNDERLINE']}run script on qsub host and do not submit jobs to queue:{colors['END']}
     {script_name} --noqsub -l <cfg-file>
 
+{colors['UNDERLINE']}run script on qsub host and run just the cache file generation:{colors['END']}
+    {script_name} -l --cachegen-only <cfg-file>
+
 {colors['UNDERLINE']}run script on workstation, set directory of aeroval files and submit to queue via qsub host:{colors['END']}
    {script_name}  --remotetempdir <directory for aeroval files> <cfg-file>
    
@@ -156,6 +159,12 @@ def main():
         action="store_true",
     )
 
+    group_caching.add_argument(
+        "--cachegen-only",
+        help="run the cache file generation only",
+        action="store_true",
+    )
+
     group_queue_opts = parser.add_argument_group("queue options", "options for running on PPI")
     group_queue_opts.add_argument(
         "--queue",
@@ -227,6 +236,11 @@ def main():
         options["nocache"] = True
     else:
         options["nocache"] = False
+
+    if args.cachegen_only:
+        options["cachegen_only"] = args.cachegen_only
+    else:
+        options["cachegen_only"] = False
 
     if args.adjustmenujson:
         options["adjustmenujson"] = True
@@ -411,7 +425,9 @@ Please add an output directory using the -o switch."""
             # just print the to be run files
             for _runfile in runfiles:
                 print(f"created {_runfile}")
-            pass
+        elif options["cachegen_only"]:
+            print("cache file generation only was requested. Exiting.")
+            return
         else:
             run_queue(runfiles, submit_flag=(not options["noqsub"]), options=options)
             conf = read_config_var(config_file=runfiles[0], cfgvar=options["cfgvar"])

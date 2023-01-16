@@ -137,7 +137,8 @@ def prep_files(options):
             cfg = deepcopy(getattr(foo, options["cfgvar"]))
 
         elif fnmatch(_file, "*.json"):
-            cfg = json.load(_file)
+            with open(_file, "r", encoding="utf-8") as j:
+                cfg = json.load(j)
         else:
             print(f"skipping file {_file} due to wrong file extension")
             continue
