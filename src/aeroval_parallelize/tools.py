@@ -146,7 +146,6 @@ def prep_files(options):
             print(f"skipping file {_file} due to wrong file extension")
             continue
 
-
         # make some adjustments to the config file
         # e.g. adjust the json_basedir and the coldata_basedir entries
         if "json_basedir" in options:

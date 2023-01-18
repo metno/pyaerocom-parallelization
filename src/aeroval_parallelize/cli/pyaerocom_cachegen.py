@@ -57,7 +57,9 @@ def main():
     parser.add_argument("-v", "--verbose", help="switch on verbosity", action="store_true")
 
     parser.add_argument(
-        "-e", "--env", help=f"conda env used to run the aeroval analysis; defaults to {CONDA_ENV}",
+        "-e",
+        "--env",
+        help=f"conda env used to run the aeroval analysis; defaults to {CONDA_ENV}",
         default=CONDA_ENV,
     )
     parser.add_argument(
@@ -110,7 +112,8 @@ def main():
         default=TMP_DIR,
     )
     group_queue_opts.add_argument(
-        "-s", "--submission-dir",
+        "-s",
+        "--submission-dir",
         help=f"directory submission scripts",
     )
 
