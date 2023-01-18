@@ -155,7 +155,7 @@ def run_queue(
     if qsub_dir == QSUB_DIR:
         qsub_tmp_dir = Path.joinpath(Path(qsub_dir), f"qsub.{runfiles[0].parts[-2]}")
     else:
-        qsub_tmp_dir = qsub_dir
+        qsub_tmp_dir = Path(qsub_dir)
 
     try:
         rnd = options["qsub_id"]
