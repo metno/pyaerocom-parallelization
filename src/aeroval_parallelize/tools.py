@@ -176,6 +176,9 @@ def prep_files(options):
             except:
                 pass
 
+        # only parallelise model for testing
+        no_superobs_flag = False
+
         for _model in cfg["model_cfg"]:
             out_cfg = deepcopy(cfg)
             out_cfg.pop("model_cfg", None)
