@@ -111,6 +111,7 @@ def main():
         "-e",
         "--env",
         help=f"conda env used to run the aeroval analysis; defaults to {CONDA_ENV}",
+        default=CONDA_ENV,
     )
     parser.add_argument(
         "--jsonrunscript",
