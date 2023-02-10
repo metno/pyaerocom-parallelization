@@ -127,6 +127,9 @@ def prep_files(options):
     # dict with the run filename as key and the corresponding cache creation mask
     cache_job_id_mask = {}
 
+    # create tmp dir
+    tempdir = mkdtemp(dir=options["tempdir"])
+
     for _file in options["files"]:
         # read aeroval config file
         if fnmatch(_file, "*.py"):
@@ -142,9 +145,6 @@ def prep_files(options):
         else:
             print(f"skipping file {_file} due to wrong file extension")
             continue
-
-        # create tmp dir
-        tempdir = mkdtemp(dir=options["tempdir"])
 
         # make some adjustments to the config file
         # e.g. adjust the json_basedir and the coldata_basedir entries
@@ -174,6 +174,9 @@ def prep_files(options):
                     superobs_obs = out_cfg["obs_cfg"][_obs]["obs_id"]
             except:
                 pass
+
+        # only parallelise model for testing
+        no_superobs_flag = False
 
         for _model in cfg["model_cfg"]:
             out_cfg = deepcopy(cfg)
@@ -233,7 +236,7 @@ def prep_files(options):
                 if options["verbose"]:
                     print(out_cfg)
 
-    return runfiles, cache_job_id_mask, json_run_dirs
+    return runfiles, cache_job_id_mask, json_run_dirs, tempdir
 
 
 def get_runfile_str(
@@ -813,12 +816,18 @@ def adjust_menujson(
     # variable order is in cfg['var_order_menu']
     # model order is the one from cfg['model_cfg']
     menu_json_out_dict = {}
+    vars_in_menu_update = []
     for _var in cfg["var_order_menu"]:
         # not all vars noted in cfg["var_order_menu"] are necessarily in the file
         try:
             menu_json_out_dict[_var] = deepcopy(menu_json_dict[_var])
         except KeyError:
             continue
+    for _var in menu_json_dict:
+        if _var not in menu_json_out_dict:
+            # the variable might not have been in cfg["var_order_menu"]
+            menu_json_out_dict[_var] = deepcopy(menu_json_dict[_var])
+
         # now adjust the order of menu_json_out_dict[_var]["obs"][<obsnetwork>]['Column'|'Surface'].keys()
         obs_networks_present = menu_json_out_dict[_var]["obs"].keys()
         for obs_networks_present in menu_json_out_dict[_var]["obs"]:
@@ -872,9 +881,14 @@ def adjust_heatmapfile(
         for _var in cfg["var_order_menu"]:
             try:
                 heatmap_out_dict[_var] = deepcopy(heatmap_dict[_var])
-
             except KeyError:
                 continue
+
+        for _var in heatmap_dict:
+            if _var not in heatmap_out_dict:
+                # the variable might not have been in cfg["var_order_menu"]
+                heatmap_out_dict[_var] = deepcopy(heatmap_dict[_var])
+
             # now adjust the order of heatmap_out_dict[_var][<obsnetwork>]['Column'|'Surface'].keys()
             for obs_networks_present in heatmap_out_dict[_var]:
                 for obs_vert_type in heatmap_out_dict[_var][obs_networks_present]:
@@ -1014,6 +1028,12 @@ def adjust_hm_ts_file(
                 heatmap_out_dict[_var] = deepcopy(heatmap_dict[_var])
             except KeyError:
                 continue
+
+        for _var in heatmap_dict:
+            if _var not in heatmap_out_dict:
+                # the variable might not have been in cfg["var_order_menu"]
+                menu_json_out_dict[_var] = deepcopy(heatmap_dict[_var])
+
             # now adjust the order of heatmap_out_dict[_var][<obsnetwork>]['Column'|'Surface'].keys()
             for obs_networks_present in heatmap_out_dict[_var]:
                 for obs_vert_type in heatmap_out_dict[_var][obs_networks_present]:

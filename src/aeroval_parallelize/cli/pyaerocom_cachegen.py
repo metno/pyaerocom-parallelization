@@ -57,7 +57,10 @@ def main():
     parser.add_argument("-v", "--verbose", help="switch on verbosity", action="store_true")
 
     parser.add_argument(
-        "-e", "--env", help=f"conda env used to run the aeroval analysis; defaults to {CONDA_ENV}"
+        "-e",
+        "--env",
+        help=f"conda env used to run the aeroval analysis; defaults to {CONDA_ENV}",
+        default=CONDA_ENV,
     )
     parser.add_argument(
         "--tempdir",
@@ -107,6 +110,11 @@ def main():
         "--remotetempdir",
         help=f"directory for temporary files on qsub node; defaults to {TMP_DIR}",
         default=TMP_DIR,
+    )
+    group_queue_opts.add_argument(
+        "-s",
+        "--submission-dir",
+        help=f"directory submission scripts",
     )
 
     args = parser.parse_args()
@@ -203,8 +211,9 @@ def main():
 
     # generate cache files locally
     scripts_to_run = []
-    # create tmp dir
+    # create tmp dir if needed
     tempdir = Path(mkdtemp(dir=options["tempdir"]))
+
     for obs_network in options["obsnetworks"]:
         for var in options["vars"]:
             # write python file
