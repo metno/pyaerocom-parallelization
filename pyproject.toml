@@ -84,3 +84,16 @@ commands =
 depends = 
     mypy>=0.981
 """
+
+[tool.flit.sdist]
+include = ["LICENSE", "README.*", "pyaerocom_env.yml", "tests"]
+exclude = [
+    ".git*",
+    ".pre-commit-config.yaml",
+    ".readthedocs.yaml",
+    "changelog",
+    "docs",
+    "release_checklist.md",
+    "scripts",
+    "suppl",
+]
