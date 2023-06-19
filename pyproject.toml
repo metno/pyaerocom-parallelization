@@ -86,14 +86,8 @@ depends =
 """
 
 [tool.flit.sdist]
-include = ["LICENSE", "README.*", "pyaerocom_env.yml", "tests"]
+include = ["LICENSE", "README.*"]
 exclude = [
     ".git*",
     ".pre-commit-config.yaml",
-    ".readthedocs.yaml",
-    "changelog",
-    "docs",
-    "release_checklist.md",
-    "scripts",
-    "suppl",
 ]
