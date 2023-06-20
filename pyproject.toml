@@ -1,12 +1,10 @@
 [build-system]
-#requires = ["setuptools>=61.0"]
-#build-backend = "setuptools.build_meta"
-requires = ["flit_core >=3.2,<4"]
-build-backend = "flit_core.buildapi"
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyaerocom_parallelization"
-version = "0.2.1"
+version = "0.2.3"
 authors = [{ name = "MET Norway" }]
 description = "run pyaerocom aeroval tasks in parallel on the Met Norway PPI infrastructure"
 readme = "README.md"
@@ -15,7 +13,6 @@ classifiers = [
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
     "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
     "Operating System :: OS Independent",
     "Development Status :: 3 - Alpha",
@@ -68,7 +65,7 @@ warn_unused_ignores = false
 [tool.tox]
 legacy_tox_ini = """
 [tox]
-envlist = py38, py39, py310, py311, format, lint
+envlist = py38, py39, py310, format, lint
 skip_missing_interpreters = True
 isolated_build = True
 
@@ -84,10 +81,3 @@ commands =
 depends = 
     mypy>=0.981
 """
-
-[tool.flit.sdist]
-include = ["LICENSE", "README.*"]
-exclude = [
-    ".git*",
-    ".pre-commit-config.yaml",
-]
