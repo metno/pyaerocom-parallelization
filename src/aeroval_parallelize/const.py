@@ -52,3 +52,9 @@ CP_COMMAND = ["cp", "-v"]
 
 # Name of conda env to use for running the aeroval analysis
 CONDA_ENV = "pya_para"
+
+# default RAM asked for caching jobs (in GB)
+DEFAULT_CACHE_RAM = 60
+
+# default RAM for analysis jobs (in GB)
+DEFAULT_ANA_RAM = 60
