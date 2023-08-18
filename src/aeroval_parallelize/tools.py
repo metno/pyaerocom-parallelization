@@ -289,7 +289,7 @@ def get_runfile_str(
     # $ -l h_vmem=40G
 
     runfile_str += f"""#$ -m abe
-#$ -l h_rss=60G,mem_free=60G,h_data=60G
+#$ -l h_rss=72G,mem_free=72G,h_data=72G
 #$ -shell y
 #$ -j y
 #$ -o {logdir}/
