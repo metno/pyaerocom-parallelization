@@ -430,6 +430,8 @@ Please add an output directory using the -o switch."""
                     "--qsub",
                     "--queue",
                     options["qsub_cache_queue_name"],
+                    "--ram",
+                    options["cacheram"],
                     "--queue-user",
                     options["qsub_user"],
                     "--qsub-id",
