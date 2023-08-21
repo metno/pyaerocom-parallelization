@@ -206,9 +206,8 @@ def main():
 
     if args.ram:
         options["qsub_ram"] = args.ram
-        ram = options["qsub_ram"]
     else:
-        ram = DEFAULT_CACHE_RAM
+        options["qsub_ram"] = DEFAULT_CACHE_RAM
 
     if args.tempdir:
         options["tempdir"] = Path(args.tempdir)
