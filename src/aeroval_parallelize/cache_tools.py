@@ -30,6 +30,7 @@ from aeroval_parallelize.const import (
     RUN_UUID,
     TMP_DIR,
     USER,
+    DEFAULT_CACHE_RAM,
 )
 
 # script start time
@@ -74,6 +75,7 @@ def get_runfile_str_arr(
     logdir=QSUB_LOG_DIR,
     date=START_TIME,
     conda_env="pya_para",
+    ram=DEFAULT_CACHE_RAM,
 ) -> str:
     """create list of strings with runfile for gridengine"""
     # create runfile
@@ -103,7 +105,7 @@ def get_runfile_str_arr(
         runfile_str += f"#$ -M {mail}\n"
     runfile_str += f"""#$ -m abe
 
-#$ -l h_rss=60G,mem_free=60G,h_data=60G
+#$ -l h_rss={ram}G,mem_free={ram}G,h_data=({ram})G
 #$ -shell y
 #$ -j y
 #$ -o {logdir}/
@@ -199,6 +201,7 @@ def run_queue(
                 script_name=remote_qsub_run_file_name,
                 queue_name=qsub_queue,
                 conda_env=options["conda_env_name"],
+                ram=options["qsub_ram"],
             )
             print(f"writing file {qsub_run_file_name}")
             with open(qsub_run_file_name, "w") as f:
@@ -287,6 +290,7 @@ qsub {remote_qsub_run_file_name}
                 script_name=remote_qsub_run_file_name,
                 queue_name=qsub_queue,
                 conda_env=options["conda_env_name"],
+                ram=options["qsub_ram"],
             )
             print(f"writing file {qsub_run_file_name}")
             with open(qsub_run_file_name, "w") as f:
