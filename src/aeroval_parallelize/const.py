@@ -58,3 +58,5 @@ DEFAULT_CACHE_RAM = 30
 
 # default RAM for analysis jobs (in GB)
 DEFAULT_ANA_RAM = 30
+# default RAM for assembly jobs (in GB)
+DEFAULT_ASSEMBLY_RAM = 10

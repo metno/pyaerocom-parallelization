@@ -32,6 +32,9 @@ from aeroval_parallelize.const import (
     RUN_UUID,
     TMP_DIR,
     USER,
+    DEFAULT_CACHE_RAM,
+    DEFAULT_ANA_RAM,
+    DEFAULT_ASSEMBLY_RAM,
 )
 from aeroval_parallelize.tools import (  # CONDA_ENV,; JSON_RUNSCRIPT,; QSUB_HOST,; QSUB_QUEUE_NAME,; QSUB_USER,; TMP_DIR,; RND,; RUN_UUID,
     AEROVAL_HEATMAP_FILES_MASK,
@@ -195,6 +198,22 @@ def main():
         "--qsub-dir",
         help=f"directory under which the qsub scripts will be stored. defaults to {QSUB_DIR}, needs to be on fs mounted by all queue hosts.",
     )
+    group_queue_opts.add_argument(
+        "--cacheram",
+        help=f"RAM usage [GB] for cache queue jobs (defaults to {DEFAULT_CACHE_RAM}GB).",
+        default=DEFAULT_CACHE_RAM,
+    )
+    group_queue_opts.add_argument(
+        "--anaram",
+        help=f"RAM usage [GB] for analysis queue jobs (defaults to {DEFAULT_ANA_RAM}GB).",
+        default=DEFAULT_ANA_RAM,
+    )
+    group_queue_opts.add_argument(
+        "--assemblyram",
+        help=f"RAM usage [GB] for assembly queue jobs (defaults to {DEFAULT_ASSEMBLY_RAM}GB.",
+        default=DEFAULT_ASSEMBLY_RAM,
+    )
+
 
     group_assembly = parser.add_argument_group(
         "data assembly", "options for assembly of parallisations output"
@@ -300,6 +319,21 @@ def main():
     else:
         options["qsub_id"] = RND
         rnd = RND
+
+    if args.cacheram:
+        options["cacheram"] = args.cacheram
+    else:
+        options["cacheram"] = DEFAULT_CACHE_RAM
+
+    if args.anaram:
+        options["anaram"] = args.anaram
+    else:
+        options["anaram"] = DEFAULT_ANA_RAM
+
+    if args.assemblyram:
+        options["assemblyram"] = args.assemblyram
+    else:
+        options["assemblyram"] = DEFAULT_ASSEMBLY_RAM
 
     if args.tempdir:
         options["tempdir"] = Path(args.tempdir)
@@ -458,6 +492,7 @@ Please add an output directory using the -o switch."""
                     in_dirs=wds[out_dir],
                     job_id=rnd,
                     wd=Path(out_dir).parent.parent,
+                    ram=options["assemblyram"],
                 )
                 qsub_start_file_name = Path.joinpath(
                     Path(runfiles[0]).parent, f"pya_{rnd}_data_merging.run"
