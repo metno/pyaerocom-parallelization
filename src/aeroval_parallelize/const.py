@@ -41,7 +41,7 @@ QSUB_USER = USER
 # queue name
 # QSUB_QUEUE_NAME = "research-el7.q"
 QSUB_QUEUE_NAME = "research-r8.q"
-QSUB_SHORT_QUEUE_NAME = "researchshort-r8.q"
+QSUB_SHORT_QUEUE_NAME = "research-r8.q"
 # log directory
 # QSUB_LOG_DIR = "/lustre/storeA/project/aerocom/logs/aeroval_logs/"
 QSUB_LOG_DIR = "/lustre/storeB/project/aerocom/logs/aeroval_logs/"
@@ -52,3 +52,9 @@ CP_COMMAND = ["cp", "-v"]
 
 # Name of conda env to use for running the aeroval analysis
 CONDA_ENV = "pya_para"
+
+# default RAM asked for caching jobs (in GB)
+DEFAULT_CACHE_RAM = 60
+
+# default RAM for analysis jobs (in GB)
+DEFAULT_ANA_RAM = 60

@@ -103,7 +103,7 @@ def get_runfile_str_arr(
         runfile_str += f"#$ -M {mail}\n"
     runfile_str += f"""#$ -m abe
 
-#$ -l h_rss=30G,mem_free=30G
+#$ -l h_rss=60G,mem_free=60G,h_data=60G
 #$ -shell y
 #$ -j y
 #$ -o {logdir}/
