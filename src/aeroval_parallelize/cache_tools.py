@@ -105,7 +105,7 @@ def get_runfile_str_arr(
         runfile_str += f"#$ -M {mail}\n"
     runfile_str += f"""#$ -m abe
 
-#$ -l h_rss={ram}G,mem_free={ram}G,h_data=({ram})G
+#$ -l h_rss={ram}G,mem_free={ram}G,h_data={ram}G
 #$ -shell y
 #$ -j y
 #$ -o {logdir}/
