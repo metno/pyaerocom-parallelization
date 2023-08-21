@@ -40,6 +40,9 @@ from aeroval_parallelize.const import (
     RUN_UUID,
     TMP_DIR,
     USER,
+    DEFAULT_ASSEMBLY_RAM,
+    DEFAULT_ANA_RAM,
+    DEFAULT_CACHE_RAM,
 )
 
 # DEFAULT_CFG_VAR = "CFG"
@@ -249,6 +252,7 @@ def get_runfile_str(
     date=START_TIME,
     conda_env=CONDA_ENV,
     hold_pattern=None,
+    ram=DEFAULT_ANA_RAM
 ) -> str:
     """create list of strings with runfile for gridengine
 
@@ -289,7 +293,7 @@ def get_runfile_str(
     # $ -l h_vmem=40G
 
     runfile_str += f"""#$ -m abe
-#$ -l h_rss=72G,mem_free=72G,h_data=72G
+#$ -l h_rss={ram}G,mem_free={ram}G,h_data={ram}G
 #$ -shell y
 #$ -j y
 #$ -o {logdir}/
@@ -394,6 +398,7 @@ def run_queue(
                 script_name=remote_qsub_run_file_name,
                 hold_pattern=hold_pattern,
                 conda_env=options["conda_env_name"],
+                ram=options["anaram"],
             )
             print(f"writing file {qsub_run_file_name}")
             with open(qsub_run_file_name, "w") as f:
@@ -491,6 +496,7 @@ qsub {remote_qsub_run_file_name}
                 script_name=remote_qsub_run_file_name,
                 hold_pattern=hold_pattern,
                 conda_env=options["conda_env_name"],
+                ram=options["anaram"],
             )
             print(f"writing file {qsub_run_file_name}")
             with open(qsub_run_file_name, "w") as f:
@@ -929,6 +935,7 @@ def get_assembly_job_str(
     date=START_TIME,
     conda_env=CONDA_ENV,
     hold_pattern=None,
+    ram=DEFAULT_ASSEMBLY_RAM,
 ):
     """method to create an assembly job in the PPI queue
 
@@ -960,7 +967,7 @@ def get_assembly_job_str(
     if mail is not None:
         runfile_str += f"#$ -M {mail}\n"
     runfile_str += f"""#$ -m abe
-#$ -l h_rss=30G,mem_free=30G,h_data=30G
+#$ -l h_rss={ram}G,mem_free={ram}G,h_data={ram}G
 #$ -shell y
 #$ -j y
 #$ -o {logdir}/
@@ -1011,6 +1018,7 @@ def adjust_hm_ts_file(
     if cfg is None:
         cfg = read_config_var(config_file, cfgvar)
 
+    menu_json_out_dict = {}
     for _file in ts_files:
         try:
             with open(_file, "r") as inhandle:

@@ -24,6 +24,7 @@ from aeroval_parallelize.cache_tools import (
     TMP_DIR,
     run_queue,
     write_script,
+    DEFAULT_CACHE_RAM,
 )
 
 
@@ -116,6 +117,11 @@ def main():
         "--submission-dir",
         help=f"directory submission scripts",
     )
+    group_queue_opts.add_argument(
+        "-r",
+        "--ram",
+        help=f"RAM usage [GB] for queue",
+    )
 
     args = parser.parse_args()
     options = {}
@@ -197,6 +203,11 @@ def main():
         rnd = options["qsub_id"]
     else:
         rnd = RND
+
+    if args.ram:
+        options["qsub_ram"] = args.ram
+    else:
+        options["qsub_ram"] = DEFAULT_CACHE_RAM
 
     if args.tempdir:
         options["tempdir"] = Path(args.tempdir)

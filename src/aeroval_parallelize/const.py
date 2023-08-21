@@ -54,7 +54,9 @@ CP_COMMAND = ["cp", "-v"]
 CONDA_ENV = "pya_para"
 
 # default RAM asked for caching jobs (in GB)
-DEFAULT_CACHE_RAM = 60
+DEFAULT_CACHE_RAM = 30
 
 # default RAM for analysis jobs (in GB)
-DEFAULT_ANA_RAM = 60
+DEFAULT_ANA_RAM = 30
+# default RAM for assembly jobs (in GB)
+DEFAULT_ASSEMBLY_RAM = 10
