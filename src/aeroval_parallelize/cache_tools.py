@@ -97,8 +97,8 @@ def get_runfile_str_arr(
 #$ -q {queue_name}
 #$ -pe shmem-1 1
 #$ -wd {wd}
-#$ -l h_rt=2:00:00
-#$ -l s_rt=2:00:00
+#$ -l h_rt=4:00:00
+#$ -l s_rt=4:00:00
 """
     # $ -l h_vmem=40G
     if mail is not None:
