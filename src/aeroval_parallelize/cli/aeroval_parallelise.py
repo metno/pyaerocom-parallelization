@@ -321,9 +321,9 @@ def main():
         rnd = RND
 
     if args.cacheram:
-        options["cacheram"] = args.cacheram
+        options["cacheram"] = str(args.cacheram)
     else:
-        options["cacheram"] = DEFAULT_CACHE_RAM
+        options["cacheram"] = str(DEFAULT_CACHE_RAM)
 
     if args.anaram:
         options["anaram"] = args.anaram
@@ -431,7 +431,7 @@ Please add an output directory using the -o switch."""
                     "--queue",
                     options["qsub_cache_queue_name"],
                     "--ram",
-                    str(options["cacheram"]),
+                    options["cacheram"],
                     "--queue-user",
                     options["qsub_user"],
                     "--qsub-id",
