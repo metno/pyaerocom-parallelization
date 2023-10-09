@@ -399,6 +399,7 @@ def run_queue(
                 hold_pattern=hold_pattern,
                 conda_env=options["conda_env_name"],
                 ram=options["anaram"],
+                queue_name=qsub_queue,
             )
             print(f"writing file {qsub_run_file_name}")
             with open(qsub_run_file_name, "w") as f:
@@ -497,6 +498,7 @@ qsub {remote_qsub_run_file_name}
                 hold_pattern=hold_pattern,
                 conda_env=options["conda_env_name"],
                 ram=options["anaram"],
+                queue_name=qsub_queue,
             )
             print(f"writing file {qsub_run_file_name}")
             with open(qsub_run_file_name, "w") as f:
