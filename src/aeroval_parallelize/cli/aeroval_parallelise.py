@@ -214,7 +214,6 @@ def main():
         default=DEFAULT_ASSEMBLY_RAM,
     )
 
-
     group_assembly = parser.add_argument_group(
         "data assembly", "options for assembly of parallisations output"
     )
@@ -378,10 +377,10 @@ Please add an output directory using the -o switch."""
         print(info_str)
 
     if (
-        not options["combinedirs"]
-        and not options["adjustmenujson"]
-        and not options["adjustheatmap"]
-        and not options["adjustall"]
+            not options["combinedirs"]
+            and not options["adjustmenujson"]
+            and not options["adjustheatmap"]
+            and not options["adjustall"]
     ):
         # create aeroval config file for the queue
         # for now one for each model and Obsnetwork combination
@@ -409,7 +408,7 @@ Please add an output directory using the -o switch."""
                     # Obs net could have been used before, but not necessarily all vars
                     # the following creates a list of
                     if all(
-                        item in submitted_obs_nets[obs_net_key] for item in conf_info[obs_net_key]
+                            item in submitted_obs_nets[obs_net_key] for item in conf_info[obs_net_key]
                     ):
                         continue
                     else:
@@ -471,7 +470,8 @@ Please add an output directory using the -o switch."""
             print("cache file generation only was requested. Exiting.")
             return
         else:
-            run_queue(runfiles, submit_flag=(not options["noqsub"]), options=options)
+            run_queue(runfiles, submit_flag=(not options["noqsub"]), qsub_queue=options["qsub_queue_name"],
+                      options=options)
             conf = read_config_var(config_file=runfiles[0], cfgvar=options["cfgvar"])
             # now add jobs for data assembly and json file reordering
             # create a data dict with the assembly directory as key and the directories to
@@ -495,6 +495,7 @@ Please add an output directory using the -o switch."""
                     job_id=rnd,
                     wd=Path(out_dir).parent.parent,
                     ram=options["assemblyram"],
+                    queue_name=options["qsub_queue_name"],
                 )
                 qsub_start_file_name = Path.joinpath(
                     Path(runfiles[0]).parent, f"pya_{rnd}_data_merging.run"

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyaerocom_parallelization"
-version = "0.3.4"
+version = "0.3.6"
 authors = [{ name = "MET Norway" }]
 description = "run pyaerocom aeroval tasks in parallel on the Met Norway PPI infrastructure"
 readme = "README.md"
@@ -23,9 +23,9 @@ classifiers = [
 requires-python = ">=3.8"
 dependencies = ["simplejson"]
 
-[project.optional-dependencies]
-proj-legacy = ["pyaerocom[proj-legacy]"]
-proj8 = ["pyaerocom[proj8]"]
+#[project.optional-dependencies]
+#proj-legacy = ["pyaerocom[proj-legacy]"]
+#proj8 = ["pyaerocom[proj8]"]
 
 [project.urls]
 "Homepage" = "https://github.com/metno/pyaerocom-parallelization"
@@ -37,17 +37,17 @@ aeroval_run_json_cfg = "aeroval_parallelize.cli.aeroval_run_json_cfg:main"
 pyaerocom_cachegen = "aeroval_parallelize.cli.pyaerocom_cachegen:main"
 
 [tool.black]
-target-version = ['py38']
+target-version = ['py39']
 line-length = 99
 
 [tool.isort]
-py_version = "38"
+py_version = "39"
 profile = "black"
 src_paths = ["src", "tests"]
 line_length = 99
 
 [tool.mypy]
-python_version = "3.8"
+python_version = "3.9"
 warn_unused_configs = true
 warn_unused_ignores = true
 warn_no_return = true
