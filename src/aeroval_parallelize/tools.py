@@ -963,8 +963,8 @@ def get_assembly_job_str(
 #$ -q {queue_name}
 #$ -pe shmem-1 1
 #$ -wd {wd}
-#$ -l h_rt=4:00:00
-#$ -l s_rt=4:00:00
+#$ -l h_rt=8:00:00
+#$ -l s_rt=8:00:00
 """
     if mail is not None:
         runfile_str += f"#$ -M {mail}\n"
