@@ -205,7 +205,9 @@ def prep_files(options):
                         "coldata_basedir"
                     ] = f"{cfg['coldata_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
                     cfg_file = Path(_file).stem
-                    outfile = Path(tempdir).joinpath(f"{cfg_file}_{_model}_{_obs_network}.json")
+                    outfile = Path(tempdir).joinpath(
+                        f"{cfg_file}_{_model}_{_obs_network}.json"
+                    )
                     # the parallelisation is based on obs network for now only, while the cache
                     # generation runs the variables in parallel already
                     cache_job_id_mask[outfile] = f"{QSUB_SCRIPT_START}{pya_obsid}*"
@@ -228,7 +230,9 @@ def prep_files(options):
                     "coldata_basedir"
                 ] = f"{cfg['coldata_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
                 cfg_file = Path(_file).stem
-                outfile = Path(tempdir).joinpath(f"{cfg_file}_{_model}_{_obs_network}.json")
+                outfile = Path(tempdir).joinpath(
+                    f"{cfg_file}_{_model}_{_obs_network}.json"
+                )
                 # cache_job_id_mask[outfile] = f"{QSUB_SCRIPT_START}{_obs_network}*"
                 cache_job_id_mask[outfile] = f"{QSUB_SCRIPT_START}*"
                 print(f"writing file {outfile}")
@@ -252,7 +256,7 @@ def get_runfile_str(
     date=START_TIME,
     conda_env=CONDA_ENV,
     hold_pattern=None,
-    ram=DEFAULT_ANA_RAM
+    ram=DEFAULT_ANA_RAM,
 ) -> str:
     """create list of strings with runfile for gridengine
 
@@ -390,7 +394,9 @@ def run_queue(
                 print("success...")
             # create qsub runfile and copy that to the qsub host
             qsub_run_file_name = _file.with_name(f"{_file.stem}{'.run'}")
-            remote_qsub_run_file_name = Path.joinpath(qsub_tmp_dir, qsub_run_file_name.name)
+            remote_qsub_run_file_name = Path.joinpath(
+                qsub_tmp_dir, qsub_run_file_name.name
+            )
             remote_json_file = Path.joinpath(qsub_tmp_dir, _file.name)
             dummy_str = get_runfile_str(
                 remote_json_file,
@@ -420,8 +426,12 @@ def run_queue(
             # create a script with the qsub call and start that
             host_str = f"{qsub_user}@{qsub_host}:{qsub_tmp_dir}/"
             qsub_start_file_name = _file.with_name(f"{_file.stem}{'.sh'}")
-            remote_qsub_run_file_name = Path.joinpath(qsub_tmp_dir, qsub_run_file_name.name)
-            remote_qsub_start_file_name = Path.joinpath(qsub_tmp_dir, qsub_start_file_name.name)
+            remote_qsub_run_file_name = Path.joinpath(
+                qsub_tmp_dir, qsub_run_file_name.name
+            )
+            remote_qsub_start_file_name = Path.joinpath(
+                qsub_tmp_dir, qsub_start_file_name.name
+            )
             # this does not work:
             # cmd_arr = ["ssh", host_str, "/usr/bin/bash", "-l", "qsub", remote_qsub_run_file_name]
             # use bash script as workaround
@@ -489,7 +499,9 @@ qsub {remote_qsub_run_file_name}
                 print("success...")
             # create qsub runfile and copy that to cluster readable location
             qsub_run_file_name = _file.with_name(f"{_file.stem}{'.run'}")
-            remote_qsub_run_file_name = Path.joinpath(qsub_tmp_dir, qsub_run_file_name.name)
+            remote_qsub_run_file_name = Path.joinpath(
+                qsub_tmp_dir, qsub_run_file_name.name
+            )
             remote_json_file = Path.joinpath(qsub_tmp_dir, _file.name)
             dummy_str = get_runfile_str(
                 remote_json_file,
@@ -519,8 +531,12 @@ qsub {remote_qsub_run_file_name}
             # create a script with the qsub call and start that
             host_str = f"{qsub_tmp_dir}/"
             qsub_start_file_name = _file.with_name(f"{_file.stem}{'.sh'}")
-            remote_qsub_run_file_name = Path.joinpath(qsub_tmp_dir, qsub_run_file_name.name)
-            remote_qsub_start_file_name = Path.joinpath(qsub_tmp_dir, qsub_start_file_name.name)
+            remote_qsub_run_file_name = Path.joinpath(
+                qsub_tmp_dir, qsub_run_file_name.name
+            )
+            remote_qsub_start_file_name = Path.joinpath(
+                qsub_tmp_dir, qsub_start_file_name.name
+            )
             # this does not work:
             # cmd_arr = ["ssh", host_str, "/usr/bin/bash", "-l", "qsub", remote_qsub_run_file_name]
             # use bash script as workaround
@@ -553,7 +569,9 @@ qsub {remote_qsub_run_file_name}
 
             else:
                 print(f"qsub files created on localhost.")
-                print(f"you can start the job with the command: qsub {remote_qsub_run_file_name}.")
+                print(
+                    f"you can start the job with the command: qsub {remote_qsub_run_file_name}."
+                )
     return True
 
 
@@ -586,13 +604,17 @@ def combine_output(options: dict):
             for dir_idx, dir in enumerate(Path(combinedir).iterdir()):
                 # there should be just one directory. Use the 1st only anyway
                 if dir_idx == 0:
-                    exp_dir = [child for child in dir.iterdir() if Path.is_dir(child)][0]
+                    exp_dir = [child for child in dir.iterdir() if Path.is_dir(child)][
+                        0
+                    ]
                     # {project_name}/experiments.json: files are identical over one parallelisation run
                     # but it might need not exist on the target ==> copy it
                     # if it's existing, then merge with the one of the current experiment
                     # so copy / merge experiments.json first
                     exp_in_file = Path.joinpath(dir, EXPERIMENT_JSON_FILE)
-                    exp_out_file = Path(options["outdir"]).parent.joinpath(EXPERIMENT_JSON_FILE)
+                    exp_out_file = Path(options["outdir"]).parent.joinpath(
+                        EXPERIMENT_JSON_FILE
+                    )
                     if exp_out_file.exists():
                         # merge file
                         combine_json_files([exp_out_file, exp_in_file], exp_out_file)
@@ -643,7 +665,9 @@ def combine_output(options: dict):
                 elif match_file(cmp_file, MERGE_EXP_CFG_FILES):
                     # special treatment for the experiment configuration
                     # file names need to be adjusted
-                    cfg_file = inpath.joinpath(f"cfg_{inpath.parts[-2]}_{inpath.parts[-1]}.json")
+                    cfg_file = inpath.joinpath(
+                        f"cfg_{inpath.parts[-2]}_{inpath.parts[-1]}.json"
+                    )
                     outfile = out_target_dir.joinpath(
                         f"cfg_{options['outdir'].parts[-2]}_{inpath.parts[-1]}.json"
                     )
@@ -740,7 +764,9 @@ def dict_merge(dct: dict | None, merge_dct: dict):
     return dct
 
 
-def match_file(file: str, file_mask_array: str | list[str] = MERGE_EXP_FILES_TO_COMBINE) -> bool:
+def match_file(
+    file: str, file_mask_array: str | list[str] = MERGE_EXP_FILES_TO_COMBINE
+) -> bool:
     """small helper that matches a filename against a list if wildcards"""
     if isinstance(file_mask_array, str):
         file_mask_array = [file_mask_array]
@@ -784,7 +810,8 @@ def get_config_info(
 ) -> dict:
     """method to return the used observations and variables in formatted way
 
-    returns a dict with the obs network name as key and the corresponding variables values"""
+    returns a dict with the obs network name as key and the corresponding variables values
+    """
 
     if not cfg:
         cfg = read_config_var(config_file=config_file, cfgvar=cfgvar)
@@ -797,9 +824,9 @@ def get_config_info(
         except KeyError:
             pass
 
-        var_config[cfg["obs_cfg"][_obs_network]["obs_id"]] = cfg["obs_cfg"][_obs_network][
-            "obs_vars"
-        ]
+        var_config[cfg["obs_cfg"][_obs_network]["obs_id"]] = cfg["obs_cfg"][
+            _obs_network
+        ]["obs_vars"]
 
     return var_config
 
@@ -843,13 +870,15 @@ def adjust_menujson(
                 current_obs_order_dict = deepcopy(
                     menu_json_out_dict[_var]["obs"][obs_networks_present][obs_vert_type]
                 )
-                menu_json_out_dict[_var]["obs"][obs_networks_present][obs_vert_type] = {}
+                menu_json_out_dict[_var]["obs"][obs_networks_present][
+                    obs_vert_type
+                ] = {}
                 for _model in cfg["model_cfg"]:
                     # not all the model necessaryly provide all variables
                     try:
-                        menu_json_out_dict[_var]["obs"][obs_networks_present][obs_vert_type][
-                            _model
-                        ] = current_obs_order_dict[_model]
+                        menu_json_out_dict[_var]["obs"][obs_networks_present][
+                            obs_vert_type
+                        ][_model] = current_obs_order_dict[_model]
                     except KeyError:
                         pass
 
@@ -952,7 +981,13 @@ def get_assembly_job_str(
     # assembly command line
     # aeroval_parallelize -c -o <output directory> <input directories>
     in_dir_str = " ".join(map(str, in_dirs))
-    assembly_cmd_arr = ["aeroval_parallelize", "-c", "-o", f"{out_dir}", f"{in_dir_str}"]
+    assembly_cmd_arr = [
+        "aeroval_parallelize",
+        "-c",
+        "-o",
+        f"{out_dir}",
+        f"{in_dir_str}",
+    ]
     assembly_cmd_str = " ".join(map(str, assembly_cmd_arr))
 
     menu_json_file = Path.joinpath(Path(out_dir), "menu.json")
@@ -1143,7 +1178,9 @@ def run_queue_simple(
             host_str = f"{qsub_user}@{qsub_host}:{qsub_tmp_dir}/"
             qsub_start_file_name = _file.with_name(f"{_file.stem}{'.sh'}")
             remote_qsub_run_file_name = Path.joinpath(qsub_tmp_dir, _file.name)
-            remote_qsub_start_file_name = Path.joinpath(qsub_tmp_dir, qsub_start_file_name.name)
+            remote_qsub_start_file_name = Path.joinpath(
+                qsub_tmp_dir, qsub_start_file_name.name
+            )
             # this does not work:
             # cmd_arr = ["ssh", host_str, "/usr/bin/bash", "-l", "qsub", remote_qsub_run_file_name]
             # use bash script as workaround
@@ -1216,7 +1253,9 @@ qsub {remote_qsub_run_file_name}
             host_str = f"{qsub_tmp_dir}/"
             qsub_start_file_name = _file.with_name(f"{_file.stem}{'.sh'}")
             remote_qsub_run_file_name = Path.joinpath(qsub_tmp_dir, _file.name)
-            remote_qsub_start_file_name = Path.joinpath(qsub_tmp_dir, qsub_start_file_name.name)
+            remote_qsub_start_file_name = Path.joinpath(
+                qsub_tmp_dir, qsub_start_file_name.name
+            )
             # this does not work:
             # cmd_arr = ["ssh", host_str, "/usr/bin/bash", "-l", "qsub", remote_qsub_run_file_name]
             # use bash script as workaround
@@ -1249,5 +1288,7 @@ qsub {remote_qsub_run_file_name}
 
             else:
                 print(f"qsub files created on localhost.")
-                print(f"you can start the job with the command: qsub {remote_qsub_run_file_name}.")
+                print(
+                    f"you can start the job with the command: qsub {remote_qsub_run_file_name}."
+                )
     return True

@@ -41,7 +41,9 @@ QSUB_SCRIPT_START = f"pya_{RND}_caching_"
 
 
 def write_script(
-    filename: str | Path, var: str = "od550aer", obsnetwork: str = "AeronetSunV3Lev2.daily"
+    filename: str | Path,
+    var: str = "od550aer",
+    obsnetwork: str = "AeronetSunV3Lev2.daily",
 ):
     import os
     import stat
@@ -193,7 +195,9 @@ def run_queue(
                 print("success...")
             # create qsub runfile and copy that to the qsub host
             qsub_run_file_name = _file.with_name(f"{_file.stem}{'.run'}")
-            remote_qsub_run_file_name = Path.joinpath(qsub_tmp_dir, qsub_run_file_name.name)
+            remote_qsub_run_file_name = Path.joinpath(
+                qsub_tmp_dir, qsub_run_file_name.name
+            )
             remote_json_file = Path.joinpath(qsub_tmp_dir, _file.name)
             dummy_str = get_runfile_str_arr(
                 remote_json_file,
@@ -222,8 +226,12 @@ def run_queue(
             # create a script with the qsub call and start that
             host_str = f"{qsub_user}@{qsub_host}:{qsub_tmp_dir}/"
             qsub_start_file_name = _file.with_name(f"{_file.stem}{'.sh'}")
-            remote_qsub_run_file_name = Path.joinpath(qsub_tmp_dir, qsub_run_file_name.name)
-            remote_qsub_start_file_name = Path.joinpath(qsub_tmp_dir, qsub_start_file_name.name)
+            remote_qsub_run_file_name = Path.joinpath(
+                qsub_tmp_dir, qsub_run_file_name.name
+            )
+            remote_qsub_start_file_name = Path.joinpath(
+                qsub_tmp_dir, qsub_start_file_name.name
+            )
             # this does not work:
             # cmd_arr = ["ssh", host_str, "/usr/bin/bash", "-l", "qsub", remote_qsub_run_file_name]
             # use bash script as workaround
@@ -243,7 +251,13 @@ qsub {remote_qsub_run_file_name}
                     print("success...")
 
                 host_str = f"{qsub_user}@{qsub_host}"
-                cmd_arr = ["ssh", host_str, "/usr/bin/bash", "-l", remote_qsub_start_file_name]
+                cmd_arr = [
+                    "ssh",
+                    host_str,
+                    "/usr/bin/bash",
+                    "-l",
+                    remote_qsub_start_file_name,
+                ]
                 print(f"running command {' '.join(map(str, cmd_arr))}...")
                 sh_result = subprocess.run(cmd_arr)
                 if sh_result.returncode != 0:
@@ -282,7 +296,9 @@ qsub {remote_qsub_run_file_name}
                 print("success...")
             # create qsub runfile and copy that to the qsub host
             qsub_run_file_name = _file.with_name(f"{_file.stem}{'.run'}")
-            remote_qsub_run_file_name = Path.joinpath(qsub_tmp_dir, qsub_run_file_name.name)
+            remote_qsub_run_file_name = Path.joinpath(
+                qsub_tmp_dir, qsub_run_file_name.name
+            )
             remote_json_file = Path.joinpath(qsub_tmp_dir, _file.name)
             dummy_str = get_runfile_str_arr(
                 remote_json_file,
@@ -311,8 +327,12 @@ qsub {remote_qsub_run_file_name}
             # create a script with the qsub call and start that
             host_str = f"{qsub_tmp_dir}/"
             qsub_start_file_name = _file.with_name(f"{_file.stem}{'.sh'}")
-            remote_qsub_run_file_name = Path.joinpath(qsub_tmp_dir, qsub_run_file_name.name)
-            remote_qsub_start_file_name = Path.joinpath(qsub_tmp_dir, qsub_start_file_name.name)
+            remote_qsub_run_file_name = Path.joinpath(
+                qsub_tmp_dir, qsub_run_file_name.name
+            )
+            remote_qsub_start_file_name = Path.joinpath(
+                qsub_tmp_dir, qsub_start_file_name.name
+            )
             # this does not work:
             # cmd_arr = ["ssh", host_str, "/usr/bin/bash", "-l", "qsub", remote_qsub_run_file_name]
             # use bash script as workaround
@@ -345,4 +365,6 @@ qsub {remote_qsub_run_file_name}
 
             else:
                 print(f"qsub files created on localhost.")
-                print(f"you can start the job with the command: qsub {remote_qsub_run_file_name}.")
+                print(
+                    f"you can start the job with the command: qsub {remote_qsub_run_file_name}."
+                )

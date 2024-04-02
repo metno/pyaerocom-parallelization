@@ -108,7 +108,9 @@ def main():
         help="file(s) to read, directories to combine (if -c switch is used)",
         nargs="+",
     )
-    parser.add_argument("-v", "--verbose", help="switch on verbosity", action="store_true")
+    parser.add_argument(
+        "-v", "--verbose", help="switch on verbosity", action="store_true"
+    )
 
     parser.add_argument(
         "-e",
@@ -170,7 +172,9 @@ def main():
         action="store_true",
     )
 
-    group_queue_opts = parser.add_argument_group("queue options", "options for running on PPI")
+    group_queue_opts = parser.add_argument_group(
+        "queue options", "options for running on PPI"
+    )
     group_queue_opts.add_argument(
         "--queue",
         help=f"queue name to submit the jobs to; defaults to {QSUB_QUEUE_NAME}",
@@ -182,9 +186,13 @@ def main():
         default=QSUB_SHORT_QUEUE_NAME,
     )
     group_queue_opts.add_argument(
-        "--qsub-host", help=f"queue submission host; defaults to {QSUB_HOST}", default=QSUB_HOST
+        "--qsub-host",
+        help=f"queue submission host; defaults to {QSUB_HOST}",
+        default=QSUB_HOST,
     )
-    group_queue_opts.add_argument("--queue-user", help=f"queue user; defaults to {QSUB_USER}")
+    group_queue_opts.add_argument(
+        "--queue-user", help=f"queue user; defaults to {QSUB_USER}"
+    )
     group_queue_opts.add_argument(
         "--noqsub",
         help="do not submit to queue (all files created and copied, but no submission)",
@@ -217,7 +225,9 @@ def main():
     group_assembly = parser.add_argument_group(
         "data assembly", "options for assembly of parallisations output"
     )
-    group_assembly.add_argument("-o", "--outdir", help="output directory for experiment assembly")
+    group_assembly.add_argument(
+        "-o", "--outdir", help="output directory for experiment assembly"
+    )
     group_assembly.add_argument(
         "-c",
         "--combinedirs",
@@ -377,10 +387,10 @@ Please add an output directory using the -o switch."""
         print(info_str)
 
     if (
-            not options["combinedirs"]
-            and not options["adjustmenujson"]
-            and not options["adjustheatmap"]
-            and not options["adjustall"]
+        not options["combinedirs"]
+        and not options["adjustmenujson"]
+        and not options["adjustheatmap"]
+        and not options["adjustall"]
     ):
         # create aeroval config file for the queue
         # for now one for each model and Obsnetwork combination
@@ -397,23 +407,31 @@ Please add an output directory using the -o switch."""
                 # add waiting for all cache file generation scripts for now
                 # options["hold_jid"] = "create_cache_*"
                 try:
-                    options["hold_jid"][_aeroval_file] = cache_job_id_mask[_aeroval_file]
+                    options["hold_jid"][_aeroval_file] = cache_job_id_mask[
+                        _aeroval_file
+                    ]
                 except KeyError:
                     options["hold_jid"] = {}
-                    options["hold_jid"][_aeroval_file] = cache_job_id_mask[_aeroval_file]
+                    options["hold_jid"][_aeroval_file] = cache_job_id_mask[
+                        _aeroval_file
+                    ]
 
                 conf_info = get_config_info(_aeroval_file, options["cfgvar"])
                 obs_net_key = next(iter(conf_info))
-                if obs_net_key in submitted_obs_nets:  # conf info always has just one key
+                if (
+                    obs_net_key in submitted_obs_nets
+                ):  # conf info always has just one key
                     # Obs net could have been used before, but not necessarily all vars
                     # the following creates a list of
                     if all(
-                            item in submitted_obs_nets[obs_net_key] for item in conf_info[obs_net_key]
+                        item in submitted_obs_nets[obs_net_key]
+                        for item in conf_info[obs_net_key]
                     ):
                         continue
                     else:
                         submitted_obs_nets[obs_net_key] += list(
-                            set(submitted_obs_nets[obs_net_key]) - set(conf_info[obs_net_key])
+                            set(submitted_obs_nets[obs_net_key])
+                            - set(conf_info[obs_net_key])
                         )
                 else:
                     submitted_obs_nets.update(deepcopy(conf_info))
@@ -439,7 +457,9 @@ Please add an output directory using the -o switch."""
                     # emulates the qsub tempdir from the later run_queue method
                     # the goal is to use always just one qsub directory for the cache
                     # file generation and the aeroval parallelization
-                    os.path.join(options["qsub_dir"], f"qsub.{Path(tempdir).parts[-1]}"),
+                    os.path.join(
+                        options["qsub_dir"], f"qsub.{Path(tempdir).parts[-1]}"
+                    ),
                 ]
                 if options["noqsub"]:
                     queue_opts += ["--dry-qsub"]
@@ -470,8 +490,12 @@ Please add an output directory using the -o switch."""
             print("cache file generation only was requested. Exiting.")
             return
         else:
-            run_queue(runfiles, submit_flag=(not options["noqsub"]), qsub_queue=options["qsub_queue_name"],
-                      options=options)
+            run_queue(
+                runfiles,
+                submit_flag=(not options["noqsub"]),
+                qsub_queue=options["qsub_queue_name"],
+                options=options,
+            )
             conf = read_config_var(config_file=runfiles[0], cfgvar=options["cfgvar"])
             # now add jobs for data assembly and json file reordering
             # create a data dict with the assembly directory as key and the directories to
@@ -480,7 +504,11 @@ Please add an output directory using the -o switch."""
             wds = {}
             # the following returns a list of unique data assembly paths
             for json_dir in json_run_dirs:
-                _dir = str(Path.joinpath(Path(json_dir).parent, conf["proj_id"], conf["exp_id"]))
+                _dir = str(
+                    Path.joinpath(
+                        Path(json_dir).parent, conf["proj_id"], conf["exp_id"]
+                    )
+                )
                 # _dir = str(Path.joinpath(Path(json_dir).parent, conf["proj_id"]))
                 # _dir = str(Path(json_dir).parent)
                 try:
@@ -519,7 +547,9 @@ Please add an output directory using the -o switch."""
                 with open(qsub_start_file_name, "w") as f:
                     f.write(assembly_script_str)
                 run_queue_simple(
-                    [qsub_start_file_name], submit_flag=(not options["noqsub"]), options=options
+                    [qsub_start_file_name],
+                    submit_flag=(not options["noqsub"]),
+                    options=options,
                 )
 
     elif options["adjustmenujson"]:
@@ -569,7 +599,6 @@ Please add an output directory using the -o switch."""
         adjust_hm_ts_file(hm_ts_files, cfg=cfg)
 
     else:
-
         result = combine_output(options)
 
 

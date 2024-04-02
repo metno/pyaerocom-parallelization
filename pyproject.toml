@@ -4,15 +4,15 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyaerocom_parallelization"
-version = "0.3.6"
+version = "0.4.0"
 authors = [{ name = "MET Norway" }]
 description = "run pyaerocom aeroval tasks in parallel on the Met Norway PPI infrastructure"
 readme = "README.md"
 classifiers = [
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
     "Operating System :: OS Independent",
     "Development Status :: 3 - Alpha",
@@ -20,12 +20,8 @@ classifiers = [
     "Intended Audience :: Education",
     "Topic :: Scientific/Engineering :: Atmospheric Science",
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 dependencies = ["simplejson"]
-
-#[project.optional-dependencies]
-#proj-legacy = ["pyaerocom[proj-legacy]"]
-#proj8 = ["pyaerocom[proj8]"]
 
 [project.urls]
 "Homepage" = "https://github.com/metno/pyaerocom-parallelization"
@@ -36,18 +32,8 @@ aeroval_parallelize = "aeroval_parallelize.cli.aeroval_parallelise:main"
 aeroval_run_json_cfg = "aeroval_parallelize.cli.aeroval_run_json_cfg:main"
 pyaerocom_cachegen = "aeroval_parallelize.cli.pyaerocom_cachegen:main"
 
-[tool.black]
-target-version = ['py39']
-line-length = 99
-
-[tool.isort]
-py_version = "39"
-profile = "black"
-src_paths = ["src", "tests"]
-line_length = 99
-
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.11"
 warn_unused_configs = true
 warn_unused_ignores = true
 warn_no_return = true
@@ -56,28 +42,24 @@ warn_unreachable = true
 show_error_codes = true
 pretty = true
 sqlite_cache = true
-#exclude = "pyaerocom-tutorials|_build"
-
-[[tool.mypy.overrides]]
-module = ["pyaerocom.*"]
-warn_unused_ignores = false
 
 [tool.tox]
 legacy_tox_ini = """
 [tox]
-envlist = py38, py39, py310, format, lint
+min_version = 4.0
 skip_missing_interpreters = True
 isolated_build = True
+
+envlist =
+    py311
+    format
+
+[testenv]
+commands = python3 -m unittest discover -s tests
 
 [testenv:format]
 commands =
     pre-commit run --all-files --show-diff-on-failure
 deps =
     pre-commit
-
-[testenv:lint]
-commands =
-    mypy .
-depends = 
-    mypy>=0.981
 """
