@@ -8,7 +8,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     env:
-      PYTHON: 3.8
+      PYTHON: 3.10
     steps:
     - uses: actions/checkout@v3
     - name: Set up Python ${{ env.PYTHON }}
