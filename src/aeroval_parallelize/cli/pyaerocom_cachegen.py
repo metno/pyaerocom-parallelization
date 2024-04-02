@@ -25,6 +25,7 @@ from aeroval_parallelize.cache_tools import (
     run_queue,
     write_script,
     DEFAULT_CACHE_RAM,
+    ENV_MODULE_NAME,
 )
 
 
@@ -74,9 +75,10 @@ def main():
     )
 
     parser.add_argument(
-        "-l",
-        "--localhost",
-        help="start queue submission on localhost",
+        "-m",
+        "--module",
+        help=f"environment module to use; defaults to {ENV_MODULE_NAME}",
+        default=ENV_MODULE_NAME,
         action="store_true",
     )
     parser.add_argument(

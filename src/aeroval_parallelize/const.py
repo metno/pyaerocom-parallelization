@@ -53,6 +53,9 @@ CP_COMMAND = ["cp", "-v"]
 # Name of conda env to use for running the aeroval analysis
 CONDA_ENV = "pya_para"
 
+# Name of default environment module
+ENV_MODULE_NAME = "/modules/MET/rhel8/user-modules/fou-kl/aerotools/aerotools"
+
 # default RAM asked for caching jobs (in GB)
 DEFAULT_CACHE_RAM = 30
 

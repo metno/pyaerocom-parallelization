@@ -43,6 +43,7 @@ from aeroval_parallelize.const import (
     DEFAULT_ASSEMBLY_RAM,
     DEFAULT_ANA_RAM,
     DEFAULT_CACHE_RAM,
+    ENV_MODULE_NAME,
 )
 
 # DEFAULT_CFG_VAR = "CFG"

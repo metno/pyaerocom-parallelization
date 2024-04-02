@@ -31,6 +31,7 @@ from aeroval_parallelize.const import (
     TMP_DIR,
     USER,
     DEFAULT_CACHE_RAM,
+    ENV_MODULE_NAME,
 )
 
 # script start time
