@@ -54,8 +54,12 @@ def main():
     """,
     )
     parser.add_argument("--vars", help="variable name(s) to cache", nargs="+")
-    parser.add_argument("-o", "--obsnetworks", help="obs networks(s) names to cache", nargs="+")
-    parser.add_argument("-v", "--verbose", help="switch on verbosity", action="store_true")
+    parser.add_argument(
+        "-o", "--obsnetworks", help="obs networks(s) names to cache", nargs="+"
+    )
+    parser.add_argument(
+        "-v", "--verbose", help="switch on verbosity", action="store_true"
+    )
 
     parser.add_argument(
         "-e",
@@ -70,7 +74,10 @@ def main():
     )
 
     parser.add_argument(
-        "-l", "--localhost", help="start queue submission on localhost", action="store_true"
+        "-l",
+        "--localhost",
+        help="start queue submission on localhost",
+        action="store_true",
     )
     parser.add_argument(
         "-p",
@@ -78,14 +85,18 @@ def main():
         help="just print the names of the supported obs network",
         action="store_true",
     )
-    group_queue_opts = parser.add_argument_group("queue options", "options for running on PPI")
+    group_queue_opts = parser.add_argument_group(
+        "queue options", "options for running on PPI"
+    )
     group_queue_opts.add_argument(
         "--queue",
         help=f"queue name to submit the jobs to; defaults to {QSUB_SHORT_QUEUE_NAME}",
         default=QSUB_SHORT_QUEUE_NAME,
     )
     group_queue_opts.add_argument(
-        "--qsub-host", help=f"queue submission host; defaults to {QSUB_HOST}", default=QSUB_HOST
+        "--qsub-host",
+        help=f"queue submission host; defaults to {QSUB_HOST}",
+        default=QSUB_HOST,
     )
     group_queue_opts.add_argument(
         "--queue-user", help=f"queue user; defaults to {QSUB_USER}", default=QSUB_USER
@@ -165,7 +176,11 @@ def main():
         except AttributeError:
             pass
 
-        print(f"supported observational networks:\n", *sorted(supported_obs_networks), sep="\n")
+        print(
+            f"supported observational networks:\n",
+            *sorted(supported_obs_networks),
+            sep="\n",
+        )
         sys.exit(0)
 
     if args.obsnetworks:

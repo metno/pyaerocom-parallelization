@@ -9,7 +9,6 @@ import simplejson as json
 
 
 def main():
-
     parser = argparse.ArgumentParser(
         description="small helper to run aeroval configs from json files"
     )
