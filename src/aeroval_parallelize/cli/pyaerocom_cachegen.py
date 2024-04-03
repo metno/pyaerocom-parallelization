@@ -46,11 +46,9 @@ def main():
 {colors['UNDERLINE']}start cache creation serially on localhost{colors['END']}
 {script_name} --vars concpm10 concpm25 -o EEAAQeRep.v2
 
-{colors['UNDERLINE']}start cache creation parallel on qsub host (current host is NOT qsub host){colors['END']}
+{colors['UNDERLINE']}start cache creation parallel on queue{colors['END']}
 {script_name} --qsub --vars ang4487aer od550aer -o AeronetSunV3Lev2.daily
-
-{colors['UNDERLINE']}start cache creation parallel on qsub host (current host IS qsub host){colors['END']}
-{script_name} -l --qsub --vars concpm10 concpm25 vmro3 concno2 -o EEAAQeRep.NRT
+{script_name} --qsub --vars concpm10 concpm25 vmro3 concno2 -o EEAAQeRep.NRT
 
     """,
     )
@@ -62,12 +60,12 @@ def main():
         "-v", "--verbose", help="switch on verbosity", action="store_true"
     )
 
-    parser.add_argument(
-        "-e",
-        "--env",
-        help=f"conda env used to run the aeroval analysis; defaults to {CONDA_ENV}",
-        default=CONDA_ENV,
-    )
+    # parser.add_argument(
+    #     "-e",
+    #     "--env",
+    #     help=f"conda env used to run the aeroval analysis; defaults to {CONDA_ENV}",
+    #     default=CONDA_ENV,
+    # )
     parser.add_argument(
         "--tempdir",
         help=f"directory for temporary files; defaults to {TMP_DIR}",
@@ -95,11 +93,11 @@ def main():
         help=f"queue name to submit the jobs to; defaults to {QSUB_SHORT_QUEUE_NAME}",
         default=QSUB_SHORT_QUEUE_NAME,
     )
-    group_queue_opts.add_argument(
-        "--qsub-host",
-        help=f"queue submission host; defaults to {QSUB_HOST}",
-        default=QSUB_HOST,
-    )
+    # group_queue_opts.add_argument(
+    #     "--qsub-host",
+    #     help=f"queue submission host; defaults to {QSUB_HOST}",
+    #     default=QSUB_HOST,
+    # )
     group_queue_opts.add_argument(
         "--queue-user", help=f"queue user; defaults to {QSUB_USER}", default=QSUB_USER
     )
@@ -117,14 +115,14 @@ def main():
     )
     group_queue_opts.add_argument(
         "--dry-qsub",
-        help="copy all files to qsub host, but do not submit to queue",
+        help="create all files for qsub, but do not submit to queue",
         action="store_true",
     )
-    group_queue_opts.add_argument(
-        "--remotetempdir",
-        help=f"directory for temporary files on qsub node; defaults to {TMP_DIR}",
-        default=TMP_DIR,
-    )
+    # group_queue_opts.add_argument(
+    #     "--remotetempdir",
+    #     help=f"directory for temporary files on qsub node; defaults to {TMP_DIR}",
+    #     default=TMP_DIR,
+    # )
     group_queue_opts.add_argument(
         "-s",
         "--submission-dir",
@@ -169,7 +167,7 @@ def main():
             const.EEA_NRT_NAME,
             const.EEA_V2_NAME,
             const.EARLINET_NAME,
-            const.MARCO_POLO_NAME,
+            const.MEP_NAME,
             const.AIR_NOW_NAME,
         ]
         # since the IPCForest data is not in main-dev branch yet
@@ -198,9 +196,14 @@ def main():
     else:
         options["qsub"] = False
 
-    if args.env:
-        options["conda_env_name"] = args.env
+    if args.module:
+        options["env_mod"] = args.module
+    else:
+        options["env_mod"] = ENV_MODULE_NAME
 
+    # if args.env:
+    #     options["conda_env_name"] = args.env
+    #
     if args.queue:
         options["qsub_queue_name"] = args.queue
 
@@ -229,13 +232,13 @@ def main():
     if args.tempdir:
         options["tempdir"] = Path(args.tempdir)
 
-    if args.remotetempdir:
-        options["remotetempdir"] = Path(args.remotetempdir)
+    # if args.remotetempdir:
+    #     options["remotetempdir"] = Path(args.remotetempdir)
 
-    if args.localhost:
-        options["localhost"] = True
-    else:
-        options["localhost"] = False
+    # if args.localhost:
+    #     options["localhost"] = True
+    # else:
+    #     options["localhost"] = False
 
     # generate cache files locally
     scripts_to_run = []
@@ -246,10 +249,11 @@ def main():
         for var in options["vars"]:
             # write python file
             outfile = tempdir.joinpath(f"pya_{rnd}_caching_{obs_network}_{var}.py")
-            write_script(outfile, var=var, obsnetwork=obs_network)
+            write_script(outfile, var=var, obsnetwork=obs_network, use_module=True)
             scripts_to_run.append(outfile)
 
-    if options["localhost"] or options["qsub"]:
+    # if options["localhost"] or options["qsub"]:
+    if options["qsub"] or options["dry_qsub"]:
         # run via queue, either on localhost or qsub submit host
         run_queue(
             scripts_to_run,
