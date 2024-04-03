@@ -63,3 +63,6 @@ DEFAULT_CACHE_RAM = 30
 DEFAULT_ANA_RAM = 30
 # default RAM for assembly jobs (in GB)
 DEFAULT_ASSEMBLY_RAM = 10
+
+# default module name
+DEFAULT_MODULE_NAME = "/modules/MET/rhel8/user-modules/fou-kl/aerotools/aerotools"

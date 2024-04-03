@@ -31,6 +31,8 @@ from aeroval_parallelize.const import (
     TMP_DIR,
     USER,
     DEFAULT_CACHE_RAM,
+    CONDA_ENV,
+    DEFAULT_MODULE_NAME,
     ENV_MODULE_NAME,
 )
 
@@ -77,7 +79,7 @@ def get_runfile_str_arr(
     mail=f"{QSUB_USER}@met.no",
     logdir=QSUB_LOG_DIR,
     date=START_TIME,
-    conda_env="pya_para",
+    conda_env=CONDA_ENV,
     ram=DEFAULT_CACHE_RAM,
 ) -> str:
     """create list of strings with runfile for gridengine"""
@@ -131,6 +133,68 @@ conda activate {conda_env} >> ${{logfile}} 2>&1
 conda env list >> ${{logfile}} 2>&1
 set -x
 python --version >> ${{logfile}} 2>&1
+pwd >> ${{logfile}} 2>&1
+echo "starting {file} ..." >> ${{logfile}}
+{file} >> ${{logfile}} 2>&1
+
+"""
+    return runfile_str
+
+
+def get_runfile_str_arr_module(
+    file,
+    queue_name=QSUB_QUEUE_NAME,
+    script_name=None,
+    # wd=QSUB_DIR,
+    wd=None,
+    mail=f"{QSUB_USER}@met.no",
+    logdir=QSUB_LOG_DIR,
+    date=START_TIME,
+    module=DEFAULT_MODULE_NAME,
+    ram=DEFAULT_CACHE_RAM,
+) -> str:
+    """create list of strings with runfile for gridengine using the aerotools modules @ PPI"""
+    # create runfile
+
+    if wd is None:
+        wd = Path(file).parent
+
+    if script_name is None:
+        script_name = str(file.with_name(f"{file.stem}{'.run'}"))
+    elif isinstance(script_name, Path):
+        script_name = str(script_name)
+
+    # $ -N pya_{rnd}_caching_{Path(file).stem}
+
+    runfile_str = f"""#!/usr/bin/env bash -l
+    
+#$ -S /bin/bash
+#$ -N {Path(file).stem}
+#$ -q {queue_name}
+#$ -pe shmem-1 1
+#$ -wd {wd}
+#$ -l h_rt=4:00:00
+#$ -l s_rt=4:00:00
+"""
+    # $ -l h_vmem=40G
+    if mail is not None:
+        runfile_str += f"#$ -M {mail}\n"
+    runfile_str += f"""#$ -m abe
+
+#$ -l h_rss={ram}G,mem_free={ram}G,h_data={ram}G
+#$ -shell y
+#$ -j y
+#$ -o {logdir}/
+#$ -e {logdir}/
+logdir="{logdir}/"
+date="{date}"
+logfile="${{logdir}}/${{USER}}.${{date}}.${{JOB_NAME}}.${{JOB_ID}}_log.txt"
+PYAEROCOM_LOG_FILE="${{logdir}}/${{USER}}.${{date}}.${{JOB_NAME}}.${{JOB_ID}}_log.txt"
+
+echo "Got $NSLOTS slots for job $SGE_TASK_ID." >> ${{logfile}}
+module load {module} >> ${{logfile}} 2>&1
+set -x
+pya_kpython --version >> ${{logfile}} 2>&1
 pwd >> ${{logfile}} 2>&1
 echo "starting {file} ..." >> ${{logfile}}
 {file} >> ${{logfile}} 2>&1
