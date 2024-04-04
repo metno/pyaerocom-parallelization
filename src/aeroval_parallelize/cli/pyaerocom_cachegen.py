@@ -43,10 +43,14 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=f"command line interface to pyaerocom cache file generator {script_name}.",
         epilog=f"""{colors['BOLD']}Example usages:{colors['END']}
-{colors['UNDERLINE']}start cache creation serially on localhost{colors['END']}
+{colors['UNDERLINE']}start cache generation serially{colors['END']}
 {script_name} --vars concpm10 concpm25 -o EEAAQeRep.v2
 
-{colors['UNDERLINE']}start cache creation parallel on queue{colors['END']}
+{colors['UNDERLINE']}dry run cache generation for queue job{colors['END']}
+{script_name} --dry-qsub --vars ang4487aer od550aer -o AeronetSunV3Lev2.daily
+
+
+{colors['UNDERLINE']}start cache generation parallel on PPI queue{colors['END']}
 {script_name} --qsub --vars ang4487aer od550aer -o AeronetSunV3Lev2.daily
 {script_name} --qsub --vars concpm10 concpm25 vmro3 concno2 -o EEAAQeRep.NRT
 
@@ -240,16 +244,27 @@ def main():
     # else:
     #     options["localhost"] = False
 
-    # generate cache files locally
+    # generate cache files
     scripts_to_run = []
-    # create tmp dir if needed
-    tempdir = Path(mkdtemp(dir=options["tempdir"]))
+    # create tmp dir for script creation
+    # to run on the queue these have to be in either on /home or another
+    # generally available file system
+    # for local run we just put them below /tmp
+    if options["qsub"] or options["dry_qsub"]:
+        tempdir = Path(mkdtemp(dir=options["qsub_dir"]))
+        use_module = True
+    else:
+        tempdir = Path(mkdtemp(dir=options["tempdir"]))
+        use_module = False
 
     for obs_network in options["obsnetworks"]:
         for var in options["vars"]:
             # write python file
             outfile = tempdir.joinpath(f"pya_{rnd}_caching_{obs_network}_{var}.py")
-            write_script(outfile, var=var, obsnetwork=obs_network, use_module=True)
+            write_script(
+                outfile, var=var, obsnetwork=obs_network, use_module=use_module
+            )
+            print(f"Wrote {outfile}")
             scripts_to_run.append(outfile)
 
     # if options["localhost"] or options["qsub"]:
