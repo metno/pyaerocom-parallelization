@@ -64,12 +64,6 @@ def main():
         "-v", "--verbose", help="switch on verbosity", action="store_true"
     )
 
-    # parser.add_argument(
-    #     "-e",
-    #     "--env",
-    #     help=f"conda env used to run the aeroval analysis; defaults to {CONDA_ENV}",
-    #     default=CONDA_ENV,
-    # )
     parser.add_argument(
         "--tempdir",
         help=f"directory for temporary files; defaults to {TMP_DIR}",
@@ -97,11 +91,6 @@ def main():
         help=f"queue name to submit the jobs to; defaults to {QSUB_SHORT_QUEUE_NAME}",
         default=QSUB_SHORT_QUEUE_NAME,
     )
-    # group_queue_opts.add_argument(
-    #     "--qsub-host",
-    #     help=f"queue submission host; defaults to {QSUB_HOST}",
-    #     default=QSUB_HOST,
-    # )
     group_queue_opts.add_argument(
         "--queue-user", help=f"queue user; defaults to {QSUB_USER}", default=QSUB_USER
     )
@@ -122,11 +111,6 @@ def main():
         help="create all files for qsub, but do not submit to queue",
         action="store_true",
     )
-    # group_queue_opts.add_argument(
-    #     "--remotetempdir",
-    #     help=f"directory for temporary files on qsub node; defaults to {TMP_DIR}",
-    #     default=TMP_DIR,
-    # )
     group_queue_opts.add_argument(
         "-s",
         "--submission-dir",
@@ -205,9 +189,6 @@ def main():
     else:
         options["env_mod"] = ENV_MODULE_NAME
 
-    # if args.env:
-    #     options["conda_env_name"] = args.env
-    #
     if args.queue:
         options["qsub_queue_name"] = args.queue
 
@@ -235,14 +216,6 @@ def main():
 
     if args.tempdir:
         options["tempdir"] = Path(args.tempdir)
-
-    # if args.remotetempdir:
-    #     options["remotetempdir"] = Path(args.remotetempdir)
-
-    # if args.localhost:
-    #     options["localhost"] = True
-    # else:
-    #     options["localhost"] = False
 
     # generate cache files
     scripts_to_run = []
