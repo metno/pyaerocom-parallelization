@@ -157,10 +157,11 @@ def run_queue(
     # submit submission file to queue (fabric)
 
     """
-    if qsub_dir == QSUB_DIR:
-        qsub_tmp_dir = Path.joinpath(Path(qsub_dir), f"qsub.{runfiles[0].parts[-2]}")
-    else:
+    if qsub_dir != QSUB_DIR:
         qsub_tmp_dir = Path(qsub_dir)
+    else:
+        qsub_tmp_dir = Path.joinpath(Path(qsub_dir), f"qsub.{runfiles[0].parts[-2]}")
+        breakpoint()
 
     try:
         rnd = options["qsub_id"]

@@ -132,7 +132,7 @@ def prep_files(options):
     cache_job_id_mask = {}
 
     # create tmp dir
-    tempdir = mkdtemp(dir=options["tempdir"])
+    tempdir = mkdtemp(dir=options["qsub_dir"])
 
     for _file in options["files"]:
         # read aeroval config file
@@ -179,7 +179,7 @@ def prep_files(options):
             except:
                 pass
 
-        # only parallelise model for testing
+        # only parallelise model for now since the PPI cluster is RAM limited
         no_superobs_flag = False
 
         for _model in cfg["model_cfg"]:
@@ -189,6 +189,7 @@ def prep_files(options):
             out_cfg["model_cfg"][_model] = cfg["model_cfg"][_model]
 
             if no_superobs_flag:
+                # nearly untested due to PPI RAM limitation
                 out_cfg.pop("obs_cfg", None)
                 for _obs_network in cfg["obs_cfg"]:
                     # cache file generation works with pyaerocom's obs network names
@@ -255,7 +256,7 @@ def get_runfile_str(
     mail=f"{QSUB_USER}@met.no",
     logdir=QSUB_LOG_DIR,
     date=START_TIME,
-    conda_env=CONDA_ENV,
+    module=ENV_MODULE_NAME,
     hold_pattern=None,
     ram=DEFAULT_ANA_RAM,
 ) -> str:
@@ -311,21 +312,10 @@ def get_runfile_str(
 logdir="{logdir}/"
 date="{date}"
 logfile="${{logdir}}/${{USER}}.${{date}}.${{JOB_NAME}}.${{JOB_ID}}_log.txt"
-__conda_setup=$('/modules/rhel8/user-apps/aerocom/conda2022/bin/conda' 'shell.bash' 'hook' 2> /dev/null)
-if [ $? -eq 0 ]
-then eval "$__conda_setup"
-else
-  echo conda not working! exiting...
-  exit 1
-fi
 echo "Got $NSLOTS slots for job $SGE_TASK_ID." >> ${{logfile}}
-module use /modules/MET/rhel8/user-modules >> ${{logfile}} 2>&1
-module add aerocom/conda2022/0.1.0 >> ${{logfile}} 2>&1
-module list >> ${{logfile}} 2>&1
-conda activate {conda_env} >> ${{logfile}} 2>&1
-conda env list >> ${{logfile}} 2>&1
+module load {module} >> ${{logfile}} 2>&1
 set -x
-python --version >> ${{logfile}} 2>&1
+pya_python --version >> ${{logfile}} 2>&1
 pwd >> ${{logfile}} 2>&1
 echo "starting {file} ..." >> ${{logfile}}
 {str(JSON_RUNSCRIPT)} {str(file)} >> ${{logfile}} 2>&1
@@ -364,215 +354,101 @@ def run_queue(
 
     import subprocess
 
-    qsub_tmp_dir = Path.joinpath(Path(qsub_dir), f"qsub.{runfiles[0].parts[-2]}")
+    # qsub_tmp_dir = qsub_dir
 
     for idx, _file in enumerate(runfiles):
         try:
             hold_pattern = options["hold_jid"][_file]
         except KeyError:
             hold_pattern = None
-        # copy runfiles to qsub host if qsub host is not localhost
-        if not options["localhost"]:
-            # create tmp dir on qsub host; retain some parts
-            host_str = f"{qsub_user}@{qsub_host}"
-            if idx == 0:
-                cmd_arr = ["ssh", host_str, "mkdir", "-p", qsub_tmp_dir]
-                print(f"running command {' '.join(map(str, cmd_arr))}...")
-                sh_result = subprocess.run(cmd_arr, capture_output=True)
-                if sh_result.returncode != 0:
-                    continue
-                else:
-                    print("success...")
+        # create tmp dir on qsub host; retain some parts
+        # if idx == 0:
+        #     cmd_arr = ["mkdir", "-p", qsub_tmp_dir]
+        #     print(f"running command {' '.join(map(str, cmd_arr))}...")
+        #     sh_result = subprocess.run(cmd_arr, capture_output=True)
+        #     if sh_result.returncode != 0:
+        #         continue
+        #     else:
+        #         print("success...")
 
-            # copy aeroval config file to qsub host
-            host_str = f"{qsub_user}@{qsub_host}:{qsub_tmp_dir}/"
-            cmd_arr = [*REMOTE_CP_COMMAND, _file, host_str]
-            print(f"running command {' '.join(map(str, cmd_arr))}...")
-            sh_result = subprocess.run(cmd_arr, capture_output=True)
-            if sh_result.returncode != 0:
-                continue
-            else:
-                print("success...")
-            # create qsub runfile and copy that to the qsub host
-            qsub_run_file_name = _file.with_name(f"{_file.stem}{'.run'}")
-            remote_qsub_run_file_name = Path.joinpath(
-                qsub_tmp_dir, qsub_run_file_name.name
-            )
-            remote_json_file = Path.joinpath(qsub_tmp_dir, _file.name)
-            dummy_str = get_runfile_str(
-                remote_json_file,
-                wd=qsub_tmp_dir,
-                script_name=remote_qsub_run_file_name,
-                hold_pattern=hold_pattern,
-                conda_env=options["conda_env_name"],
-                ram=options["anaram"],
-                queue_name=qsub_queue,
-            )
-            print(f"writing file {qsub_run_file_name}")
-            with open(qsub_run_file_name, "w") as f:
-                f.write(dummy_str)
+        # copy aeroval config file to cluster readable location
+        # host_str = f"{qsub_tmp_dir}/"
+        # cmd_arr = [*CP_COMMAND, _file, host_str]
+        # print(f"running command {' '.join(map(str, cmd_arr))}...")
+        # sh_result = subprocess.run(cmd_arr, capture_output=True)
+        # if sh_result.returncode != 0:
+        #     continue
+        # else:
+        #     print("success...")
+        # create qsub runfile and copy that to cluster readable location
+        qsub_run_file_name = _file.with_name(f"{_file.stem}{'.run'}")
+        # remote_qsub_run_file_name = Path.joinpath(qsub_dir, qsub_run_file_name.name)
+        # remote_json_file = Path.joinpath(qsub_dir, _file.name)
+        dummy_str = get_runfile_str(
+            _file,
+            wd=qsub_dir,
+            script_name=qsub_run_file_name,
+            hold_pattern=hold_pattern,
+            module=options["env_mod"],
+            ram=options["anaram"],
+            queue_name=qsub_queue,
+        )
+        with open(qsub_run_file_name, "w") as f:
+            f.write(dummy_str)
+        print(f"wrote file {qsub_run_file_name}")
 
-            # copy runfile to qsub host
-            host_str = f"{qsub_user}@{qsub_host}:{qsub_tmp_dir}/"
-            cmd_arr = [*REMOTE_CP_COMMAND, qsub_run_file_name, host_str]
-            print(f"running command {' '.join(map(str, cmd_arr))}...")
-            sh_result = subprocess.run(cmd_arr, capture_output=True)
-            if sh_result.returncode != 0:
-                continue
-            else:
-                print("success...")
+        # copy runfile to cluster readable location
+        # host_str = f"{qsub_tmp_dir}/"
+        # cmd_arr = [*CP_COMMAND, qsub_run_file_name, qsub_tmp_dir]
+        # print(f"running command {' '.join(map(str, cmd_arr))}...")
+        # sh_result = subprocess.run(cmd_arr, capture_output=True)
+        # if sh_result.returncode != 0:
+        #     continue
+        # else:
+        #     print("success...")
 
-            # run qsub
-            # unfortunatly qsub can't be run directly for some reason (likely security)
-            # create a script with the qsub call and start that
-            host_str = f"{qsub_user}@{qsub_host}:{qsub_tmp_dir}/"
-            qsub_start_file_name = _file.with_name(f"{_file.stem}{'.sh'}")
-            remote_qsub_run_file_name = Path.joinpath(
-                qsub_tmp_dir, qsub_run_file_name.name
-            )
-            remote_qsub_start_file_name = Path.joinpath(
-                qsub_tmp_dir, qsub_start_file_name.name
-            )
-            # this does not work:
-            # cmd_arr = ["ssh", host_str, "/usr/bin/bash", "-l", "qsub", remote_qsub_run_file_name]
-            # use bash script as workaround
-            start_script_str = f"""#!/bin/bash -l
-qsub {remote_qsub_run_file_name}
+        # run qsub
+        # unfortunatly qsub can't be run directly for some reason (likely security)
+        # create a script with the qsub call and start that
+        # host_str = f"{qsub_tmp_dir}/"
+        qsub_start_file_name = _file.with_name(f"{_file.stem}{'.sh'}")
+        # remote_qsub_run_file_name = Path.joinpath(qsub_tmp_dir, qsub_run_file_name.name)
+        # remote_qsub_start_file_name = Path.joinpath(
+        #     qsub_tmp_dir, qsub_start_file_name.name
+        # )
+        # this does not work:
+        # cmd_arr = ["ssh", host_str, "/usr/bin/bash", "-l", "qsub", remote_qsub_run_file_name]
+        # use bash script as workaround
+        start_script_str = f"""#!/bin/bash -l
+qsub {qsub_run_file_name}
 
 """
-            with open(qsub_start_file_name, "w") as f:
-                f.write(start_script_str)
-            cmd_arr = [*REMOTE_CP_COMMAND, qsub_start_file_name, host_str]
-            if submit_flag:
-                print(f"running command {' '.join(map(str, cmd_arr))}...")
-                sh_result = subprocess.run(cmd_arr, capture_output=True)
-                if sh_result.returncode != 0:
-                    continue
-                else:
-                    print("success...")
-
-                host_str = f"{qsub_user}@{qsub_host}"
-                cmd_arr = [
-                    "ssh",
-                    host_str,
-                    "/usr/bin/bash",
-                    "-l",
-                    remote_qsub_start_file_name,
-                ]
-                print(f"running command {' '.join(map(str, cmd_arr))}...")
-                sh_result = subprocess.run(cmd_arr, capture_output=True)
-                if sh_result.returncode != 0:
-                    print(f"return code: {sh_result.returncode}")
-                    print(f"{sh_result.stderr}")
-                    continue
-                else:
-                    print("success...")
-                    print(f"{sh_result.stdout}")
-
+        with open(qsub_start_file_name, "w") as f:
+            f.write(start_script_str)
+        # cmd_arr = [*CP_COMMAND, qsub_start_file_name, host_str]
+        if submit_flag:
+            #     print(f"running command {' '.join(map(str, cmd_arr))}...")
+            #     sh_result = subprocess.run(cmd_arr, capture_output=True)
+            #     if sh_result.returncode != 0:
+            #         continue
+            #     else:
+            #         print("success...")
+            #
+            #     host_str = f"{qsub_user}@{qsub_host}"
+            cmd_arr = ["/usr/bin/bash", "-l", qsub_start_file_name]
+            print(f"running command {' '.join(map(str, cmd_arr))}...")
+            sh_result = subprocess.run(cmd_arr, capture_output=True)
+            if sh_result.returncode != 0:
+                print(f"return code: {sh_result.returncode}")
+                print(f"{sh_result.stderr}")
+                continue
             else:
-                print(f"qsub files created and copied to {qsub_host}.")
-                print(
-                    f"you can start the job with the command: qsub {remote_qsub_run_file_name} on the host {qsub_host}."
-                )
+                print("success...")
+                print(f"{sh_result.stdout}")
 
         else:
-            # localhost flag is set
-            # scripts exist already, but in /tmp where the queue nodes can't read them
-            # copy to submission directories
-            # create tmp dir on qsub host; retain some parts
-            if idx == 0:
-                cmd_arr = ["mkdir", "-p", qsub_tmp_dir]
-                print(f"running command {' '.join(map(str, cmd_arr))}...")
-                sh_result = subprocess.run(cmd_arr, capture_output=True)
-                if sh_result.returncode != 0:
-                    continue
-                else:
-                    print("success...")
-
-            # copy aeroval config file to cluster readable location
-            host_str = f"{qsub_tmp_dir}/"
-            cmd_arr = [*CP_COMMAND, _file, host_str]
-            print(f"running command {' '.join(map(str, cmd_arr))}...")
-            sh_result = subprocess.run(cmd_arr, capture_output=True)
-            if sh_result.returncode != 0:
-                continue
-            else:
-                print("success...")
-            # create qsub runfile and copy that to cluster readable location
-            qsub_run_file_name = _file.with_name(f"{_file.stem}{'.run'}")
-            remote_qsub_run_file_name = Path.joinpath(
-                qsub_tmp_dir, qsub_run_file_name.name
-            )
-            remote_json_file = Path.joinpath(qsub_tmp_dir, _file.name)
-            dummy_str = get_runfile_str(
-                remote_json_file,
-                wd=qsub_tmp_dir,
-                script_name=remote_qsub_run_file_name,
-                hold_pattern=hold_pattern,
-                conda_env=options["conda_env_name"],
-                ram=options["anaram"],
-                queue_name=qsub_queue,
-            )
-            print(f"writing file {qsub_run_file_name}")
-            with open(qsub_run_file_name, "w") as f:
-                f.write(dummy_str)
-
-            # copy runfile to cluster readable location
-            host_str = f"{qsub_tmp_dir}/"
-            cmd_arr = [*CP_COMMAND, qsub_run_file_name, host_str]
-            print(f"running command {' '.join(map(str, cmd_arr))}...")
-            sh_result = subprocess.run(cmd_arr, capture_output=True)
-            if sh_result.returncode != 0:
-                continue
-            else:
-                print("success...")
-
-            # run qsub
-            # unfortunatly qsub can't be run directly for some reason (likely security)
-            # create a script with the qsub call and start that
-            host_str = f"{qsub_tmp_dir}/"
-            qsub_start_file_name = _file.with_name(f"{_file.stem}{'.sh'}")
-            remote_qsub_run_file_name = Path.joinpath(
-                qsub_tmp_dir, qsub_run_file_name.name
-            )
-            remote_qsub_start_file_name = Path.joinpath(
-                qsub_tmp_dir, qsub_start_file_name.name
-            )
-            # this does not work:
-            # cmd_arr = ["ssh", host_str, "/usr/bin/bash", "-l", "qsub", remote_qsub_run_file_name]
-            # use bash script as workaround
-            start_script_str = f"""#!/bin/bash -l
-qsub {remote_qsub_run_file_name}
-
-"""
-            with open(qsub_start_file_name, "w") as f:
-                f.write(start_script_str)
-            cmd_arr = [*CP_COMMAND, qsub_start_file_name, host_str]
-            if submit_flag:
-                print(f"running command {' '.join(map(str, cmd_arr))}...")
-                sh_result = subprocess.run(cmd_arr, capture_output=True)
-                if sh_result.returncode != 0:
-                    continue
-                else:
-                    print("success...")
-
-                host_str = f"{qsub_user}@{qsub_host}"
-                cmd_arr = ["/usr/bin/bash", "-l", remote_qsub_start_file_name]
-                print(f"running command {' '.join(map(str, cmd_arr))}...")
-                sh_result = subprocess.run(cmd_arr, capture_output=True)
-                if sh_result.returncode != 0:
-                    print(f"return code: {sh_result.returncode}")
-                    print(f"{sh_result.stderr}")
-                    continue
-                else:
-                    print("success...")
-                    print(f"{sh_result.stdout}")
-
-            else:
-                print(f"qsub files created on localhost.")
-                print(
-                    f"you can start the job with the command: qsub {remote_qsub_run_file_name}."
-                )
+            print(f"qsub run file created.")
+            print(f"you can start the job with the command: qsub {qsub_run_file_name}.")
     return True
 
 
@@ -965,7 +841,7 @@ def get_assembly_job_str(
     mail=f"{QSUB_USER}@met.no",
     logdir=QSUB_LOG_DIR,
     date=START_TIME,
-    conda_env=CONDA_ENV,
+    module=ENV_MODULE_NAME,
     hold_pattern=None,
     ram=DEFAULT_ASSEMBLY_RAM,
 ):
@@ -1018,21 +894,9 @@ def get_assembly_job_str(
 logdir="{logdir}/"
 date="{date}"
 logfile="${{logdir}}/${{USER}}.${{date}}.${{JOB_NAME}}.${{JOB_ID}}_log.txt"
-__conda_setup=$('/modules/rhel8/user-apps/aerocom/conda2022/bin/conda' 'shell.bash' 'hook' 2> /dev/null)
-if [ $? -eq 0 ]
-then eval "$__conda_setup"
-else
-  echo conda not working! exiting...
-  exit 1
-fi
-echo "Got $NSLOTS slots for job $SGE_TASK_ID." >> ${{logfile}}
-module use /modules/MET/rhel8/user-modules >> ${{logfile}} 2>&1
-module add aerocom/conda2022/0.1.0 >> ${{logfile}} 2>&1
-module list >> ${{logfile}} 2>&1
-conda activate {conda_env} >> ${{logfile}} 2>&1
-conda env list >> ${{logfile}} 2>&1
+module load {module} >> ${{logfile}} 2>&1
 set -x
-python --version >> ${{logfile}} 2>&1
+pya_python --version >> ${{logfile}} 2>&1
 pwd >> ${{logfile}} 2>&1
 echo "starting {assembly_cmd_str} ..." >> ${{logfile}}
 {assembly_cmd_str} >> ${{logfile}} 2>&1
@@ -1147,149 +1011,50 @@ def run_queue_simple(
 
     import subprocess
 
-    qsub_tmp_dir = Path.joinpath(Path(qsub_dir), f"qsub.{runfiles[0].parts[-2]}")
+    # qsub_tmp_dir = qsub_dir
 
     for idx, _file in enumerate(runfiles):
-        # copy runfiles to qsub host if qsub host is not localhost
-        if not options["localhost"]:
-            # create tmp dir on qsub host; retain some parts
-            host_str = f"{qsub_user}@{qsub_host}"
-            if idx == 0:
-                cmd_arr = ["ssh", host_str, "mkdir", "-p", qsub_tmp_dir]
-                print(f"running command {' '.join(map(str, cmd_arr))}...")
-                sh_result = subprocess.run(cmd_arr, capture_output=True)
-                if sh_result.returncode != 0:
-                    continue
-                else:
-                    print("success...")
+        # localhost flag is set
+        # scripts exist already, but in /tmp where the queue nodes can't read them
+        # copy to submission directories
+        # create tmp dir on qsub host; retain some parts
 
-            # copy runfile to qsub host
-            host_str = f"{qsub_user}@{qsub_host}:{qsub_tmp_dir}/"
-            cmd_arr = [*REMOTE_CP_COMMAND, _file, host_str]
+        # run qsub
+        # unfortunatly qsub can't be run directly for some reason (likely security)
+        # create a script with the qsub call and start that
+        # host_str = f"{qsub_tmp_dir}/"
+        qsub_start_file_name = _file.with_name(f"{_file.stem}{'.sh'}")
+        qsub_run_file_name = Path.joinpath(Path(qsub_dir), _file.name)
+        # this does not work:
+        # cmd_arr = ["ssh", host_str, "/usr/bin/bash", "-l", "qsub", remote_qsub_run_file_name]
+        # use bash script as workaround
+        start_script_str = f"""#!/bin/bash -l
+qsub {qsub_run_file_name}
+
+"""
+        with open(qsub_start_file_name, "w") as f:
+            f.write(start_script_str)
+        if submit_flag:
+            # print(f"running command {' '.join(map(str, cmd_arr))}...")
+            # sh_result = subprocess.run(cmd_arr, capture_output=True)
+            # if sh_result.returncode != 0:
+            #     continue
+            # else:
+            #     print("success...")
+
+            # host_str = f"{qsub_user}@{qsub_host}"
+            cmd_arr = ["/usr/bin/bash", "-l", qsub_start_file_name]
             print(f"running command {' '.join(map(str, cmd_arr))}...")
             sh_result = subprocess.run(cmd_arr, capture_output=True)
             if sh_result.returncode != 0:
+                print(f"return code: {sh_result.returncode}")
+                print(f"{sh_result.stderr}")
                 continue
             else:
                 print("success...")
-
-            # run qsub
-            # unfortunatly qsub can't be run directly for some reason (likely security)
-            # create a script with the qsub call and start that
-            host_str = f"{qsub_user}@{qsub_host}:{qsub_tmp_dir}/"
-            qsub_start_file_name = _file.with_name(f"{_file.stem}{'.sh'}")
-            remote_qsub_run_file_name = Path.joinpath(qsub_tmp_dir, _file.name)
-            remote_qsub_start_file_name = Path.joinpath(
-                qsub_tmp_dir, qsub_start_file_name.name
-            )
-            # this does not work:
-            # cmd_arr = ["ssh", host_str, "/usr/bin/bash", "-l", "qsub", remote_qsub_run_file_name]
-            # use bash script as workaround
-            start_script_str = f"""#!/bin/bash -l
-qsub {remote_qsub_run_file_name}
-
-"""
-            with open(qsub_start_file_name, "w") as f:
-                f.write(start_script_str)
-            cmd_arr = [*REMOTE_CP_COMMAND, qsub_start_file_name, host_str]
-            if submit_flag:
-                print(f"running command {' '.join(map(str, cmd_arr))}...")
-                sh_result = subprocess.run(cmd_arr, capture_output=True)
-                if sh_result.returncode != 0:
-                    continue
-                else:
-                    print("success...")
-
-                host_str = f"{qsub_user}@{qsub_host}"
-                cmd_arr = [
-                    "ssh",
-                    host_str,
-                    "/usr/bin/bash",
-                    "-l",
-                    remote_qsub_start_file_name,
-                ]
-                print(f"running command {' '.join(map(str, cmd_arr))}...")
-                sh_result = subprocess.run(cmd_arr, capture_output=True)
-                if sh_result.returncode != 0:
-                    print(f"return code: {sh_result.returncode}")
-                    print(f"{sh_result.stderr}")
-                    continue
-                else:
-                    print("success...")
-                    print(f"{sh_result.stdout}")
-
-            else:
-                print(f"qsub files created and copied to {qsub_host}.")
-                print(
-                    f"you can start the job with the command: qsub {remote_qsub_run_file_name} on the host {qsub_host}."
-                )
+                print(f"{sh_result.stdout}")
 
         else:
-            # localhost flag is set
-            # scripts exist already, but in /tmp where the queue nodes can't read them
-            # copy to submission directories
-            # create tmp dir on qsub host; retain some parts
-            if idx == 0:
-                cmd_arr = ["mkdir", "-p", qsub_tmp_dir]
-                print(f"running command {' '.join(map(str, cmd_arr))}...")
-                sh_result = subprocess.run(cmd_arr, capture_output=True)
-                if sh_result.returncode != 0:
-                    continue
-                else:
-                    print("success...")
-
-            # copy runfile to cluster readable location
-            host_str = f"{qsub_tmp_dir}/"
-            cmd_arr = [*CP_COMMAND, _file, host_str]
-            print(f"running command {' '.join(map(str, cmd_arr))}...")
-            sh_result = subprocess.run(cmd_arr, capture_output=True)
-            if sh_result.returncode != 0:
-                continue
-            else:
-                print("success...")
-
-            # run qsub
-            # unfortunatly qsub can't be run directly for some reason (likely security)
-            # create a script with the qsub call and start that
-            host_str = f"{qsub_tmp_dir}/"
-            qsub_start_file_name = _file.with_name(f"{_file.stem}{'.sh'}")
-            remote_qsub_run_file_name = Path.joinpath(qsub_tmp_dir, _file.name)
-            remote_qsub_start_file_name = Path.joinpath(
-                qsub_tmp_dir, qsub_start_file_name.name
-            )
-            # this does not work:
-            # cmd_arr = ["ssh", host_str, "/usr/bin/bash", "-l", "qsub", remote_qsub_run_file_name]
-            # use bash script as workaround
-            start_script_str = f"""#!/bin/bash -l
-qsub {remote_qsub_run_file_name}
-
-"""
-            with open(qsub_start_file_name, "w") as f:
-                f.write(start_script_str)
-            cmd_arr = [*CP_COMMAND, qsub_start_file_name, host_str]
-            if submit_flag:
-                print(f"running command {' '.join(map(str, cmd_arr))}...")
-                sh_result = subprocess.run(cmd_arr, capture_output=True)
-                if sh_result.returncode != 0:
-                    continue
-                else:
-                    print("success...")
-
-                host_str = f"{qsub_user}@{qsub_host}"
-                cmd_arr = ["/usr/bin/bash", "-l", remote_qsub_start_file_name]
-                print(f"running command {' '.join(map(str, cmd_arr))}...")
-                sh_result = subprocess.run(cmd_arr, capture_output=True)
-                if sh_result.returncode != 0:
-                    print(f"return code: {sh_result.returncode}")
-                    print(f"{sh_result.stderr}")
-                    continue
-                else:
-                    print("success...")
-                    print(f"{sh_result.stdout}")
-
-            else:
-                print(f"qsub files created on localhost.")
-                print(
-                    f"you can start the job with the command: qsub {remote_qsub_run_file_name}."
-                )
+            print(f"qsub files created.")
+            print(f"you can start the job with the command: qsub {qsub_run_file_name}.")
     return True

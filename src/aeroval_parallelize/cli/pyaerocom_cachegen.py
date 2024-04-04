@@ -49,6 +49,8 @@ def main():
 {colors['UNDERLINE']}dry run cache generation for queue job{colors['END']}
 {script_name} --dry-qsub --vars ang4487aer od550aer -o AeronetSunV3Lev2.daily
 
+{colors['UNDERLINE']}use special module at queue run ({colors['BOLD']}full module path needed!{colors['END']})
+{script_name} -m /modules/MET/rhel8/user-modules/fou-kl/aerotools/pya-v2024.03 --vars ang4487aer od550aer -o AeronetSunV3Lev2.daily
 
 {colors['UNDERLINE']}start cache generation parallel on PPI queue{colors['END']}
 {script_name} --qsub --vars ang4487aer od550aer -o AeronetSunV3Lev2.daily
@@ -224,7 +226,11 @@ def main():
     # generally available file system
     # for local run we just put them below /tmp
     if options["qsub"] or options["dry_qsub"]:
-        tempdir = Path(mkdtemp(dir=options["qsub_dir"]))
+        if options["qsub_dir"] == QSUB_DIR:
+            tempdir = Path(mkdtemp(dir=options["qsub_dir"]))
+        else:
+            tempdir = Path(options["qsub_dir"])
+
         use_module = True
     else:
         tempdir = Path(mkdtemp(dir=options["tempdir"]))
