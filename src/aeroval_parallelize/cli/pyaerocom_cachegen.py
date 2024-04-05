@@ -13,11 +13,7 @@ from pathlib import Path
 from tempfile import mkdtemp
 
 from aeroval_parallelize.cache_tools import (
-    CONDA_ENV,
     QSUB_DIR,
-    QSUB_HOST,
-    QSUB_QUEUE_NAME,
-    QSUB_SCRIPT_START,
     QSUB_SHORT_QUEUE_NAME,
     QSUB_USER,
     RND,
@@ -246,18 +242,14 @@ def main():
             print(f"Wrote {outfile}")
             scripts_to_run.append(outfile)
 
-    # if options["localhost"] or options["qsub"]:
     if options["qsub"] or options["dry_qsub"]:
         # run via queue, either on localhost or qsub submit host
         run_queue(
             scripts_to_run,
             submit_flag=(not options["dry_qsub"]),
-            qsub_dir=options["qsub_dir"],
             options=options,
             qsub_queue=options["qsub_queue_name"],
         )
-    # elif not options["localhost"] and options["qsub"] and options["dry_qsub"]:
-    #     run_queue(scripts_to_run, submit_flag=(options["qsub"]), qsub_dir=options["qsub_dir"], options=options)
     else:
         # run serially on localhost
         for _script in scripts_to_run:

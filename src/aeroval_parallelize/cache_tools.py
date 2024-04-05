@@ -140,7 +140,7 @@ echo "starting {file} ..." >> ${{logfile}}
 
 
 def run_queue(
-    runfiles: list[Path],
+    conffiles: list[Path],
     qsub_host: str = QSUB_HOST,
     qsub_cmd: str = QSUB_NAME,
     qsub_dir: str = QSUB_DIR,
@@ -149,34 +149,19 @@ def run_queue(
     submit_flag: bool = False,
     options: dict = {},
 ):
-    """submit runfiles to the remote cluster
+    """submit config files to the remote cluster
 
-    # copy runfile to qsub host (subprocess.run)
     # create submission file (create locally, copy to qsub host (fabric)
-    # create tmp directory on submission host (fabric)
-    # submit submission file to queue (fabric)
 
     """
-    # if qsub_dir != QSUB_DIR:
-    qsub_dir = Path(qsub_dir)
-    # else:
-    #     qsub_tmp_dir = Path.joinpath(Path(qsub_dir), f"qsub.{runfiles[0].parts[-2]}")
-    #     breakpoint()
 
-    # try:
-    #     rnd = options["qsub_id"]
-    # except KeyError:
-    #     rnd = RND
-
-    for idx, _file in enumerate(runfiles):
+    for idx, _file in enumerate(conffiles):
         # create qsub runfile
         qsub_run_file_name = _file.with_name(f"{_file.stem}{'.run'}")
-        remote_qsub_run_file_name = Path.joinpath(qsub_dir, qsub_run_file_name.name)
-        remote_json_file = Path.joinpath(qsub_dir, _file.name)
         dummy_str = get_runfile_str_arr_module(
-            remote_json_file,
-            wd=qsub_dir,
-            script_name=remote_qsub_run_file_name,
+            _file,
+            wd=_file.parent,
+            script_name=qsub_run_file_name,
             queue_name=qsub_queue,
             module=options["env_mod"],
             ram=options["qsub_ram"],
@@ -187,17 +172,16 @@ def run_queue(
         print(f"Wrote {qsub_run_file_name}")
 
         qsub_start_file_name = _file.with_name(f"{_file.stem}{'.sh'}")
-        remote_qsub_run_file_name = Path.joinpath(qsub_dir, qsub_run_file_name.name)
-        remote_qsub_start_file_name = Path.joinpath(qsub_dir, qsub_start_file_name.name)
 
         start_script_arr = []
         start_script_arr.append("#!/bin/bash -l")
-        start_script_arr.append(f"qsub {remote_qsub_run_file_name}")
+        start_script_arr.append(f"qsub {qsub_run_file_name}")
         start_script_arr.append("")
         with open(qsub_start_file_name, "w") as f:
             f.write("\n".join(start_script_arr))
+        print(f"Wrote {qsub_start_file_name}")
         if submit_flag:
-            cmd_arr = ["/usr/bin/bash", "-l", remote_qsub_start_file_name]
+            cmd_arr = ["/usr/bin/bash", "-l", qsub_start_file_name]
             print(f"running command {' '.join(map(str, cmd_arr))}...")
             sh_result = subprocess.run(cmd_arr, capture_output=True)
             if sh_result.returncode != 0:
@@ -210,6 +194,4 @@ def run_queue(
 
         else:
             print(f"qsub files created.")
-            print(
-                f"you can start the job with the command: qsub {remote_qsub_run_file_name}."
-            )
+            print(f"you can start the job with the command: qsub {qsub_run_file_name}.")
