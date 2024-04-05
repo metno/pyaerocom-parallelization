@@ -54,7 +54,7 @@ CP_COMMAND = ["cp", "-v"]
 CONDA_ENV = "pya_para"
 
 # Name of default environment module
-ENV_MODULE_NAME = "/modules/MET/rhel8/user-modules/fou-kl/aerotools/aerotools.conda"
+ENV_MODULE_NAME = "/modules/MET/rhel8/user-modules/fou-kl/aerotools/aerotools"
 
 # default RAM asked for caching jobs (in GB)
 DEFAULT_CACHE_RAM = 30
