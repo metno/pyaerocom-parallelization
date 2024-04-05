@@ -34,6 +34,7 @@ from aeroval_parallelize.const import (
     CONDA_ENV,
     # DEFAULT_MODULE_NAME,
     ENV_MODULE_NAME,
+    DEFAULT_PYTHON,
 )
 
 # script start time
@@ -54,7 +55,7 @@ def write_script(
     import stat
 
     if use_module:
-        shebang = "#!/usr/bin/env pya_python"
+        shebang = f"#!/usr/bin/env {DEFAULT_PYTHON}"
     else:
         shebang = "#!/usr/bin/env python"
 

@@ -44,6 +44,7 @@ from aeroval_parallelize.const import (
     DEFAULT_ANA_RAM,
     DEFAULT_CACHE_RAM,
     ENV_MODULE_NAME,
+    DEFAULT_PYTHON,
 )
 
 # DEFAULT_CFG_VAR = "CFG"
@@ -314,8 +315,8 @@ date="{date}"
 logfile="${{logdir}}/${{USER}}.${{date}}.${{JOB_NAME}}.${{JOB_ID}}_log.txt"
 echo "Got $NSLOTS slots for job $SGE_TASK_ID." >> ${{logfile}}
 module load {module} >> ${{logfile}} 2>&1
-set -x
-pya_python --version >> ${{logfile}} 2>&1
+echo "{DEFAULT_PYTHON} --version" >> ${{logfile}} 2>&1
+{DEFAULT_PYTHON} --version >> ${{logfile}} 2>&1
 pwd >> ${{logfile}} 2>&1
 echo "starting {file} ..." >> ${{logfile}}
 {str(JSON_RUNSCRIPT)} {str(file)} >> ${{logfile}} 2>&1
@@ -895,8 +896,8 @@ logdir="{logdir}/"
 date="{date}"
 logfile="${{logdir}}/${{USER}}.${{date}}.${{JOB_NAME}}.${{JOB_ID}}_log.txt"
 module load {module} >> ${{logfile}} 2>&1
-set -x
-pya_python --version >> ${{logfile}} 2>&1
+echo "{DEFAULT_PYTHON} --version" >> ${{logfile}} 2>&1
+{DEFAULT_PYTHON} --version >> ${{logfile}} 2>&1
 pwd >> ${{logfile}} 2>&1
 echo "starting {assembly_cmd_str} ..." >> ${{logfile}}
 {assembly_cmd_str} >> ${{logfile}} 2>&1

@@ -307,9 +307,6 @@ def main():
     else:
         options["dry_qsub"] = False
 
-    # if args.env:
-    #     options["conda_env_name"] = args.env
-
     if args.module:
         options["env_mod"] = args.module
     else:
