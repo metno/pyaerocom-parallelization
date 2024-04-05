@@ -157,25 +157,25 @@ def run_queue(
     # submit submission file to queue (fabric)
 
     """
-    if qsub_dir != QSUB_DIR:
-        qsub_tmp_dir = Path(qsub_dir)
-    else:
-        qsub_tmp_dir = Path.joinpath(Path(qsub_dir), f"qsub.{runfiles[0].parts[-2]}")
-        breakpoint()
+    # if qsub_dir != QSUB_DIR:
+    qsub_dir = Path(qsub_dir)
+    # else:
+    #     qsub_tmp_dir = Path.joinpath(Path(qsub_dir), f"qsub.{runfiles[0].parts[-2]}")
+    #     breakpoint()
 
-    try:
-        rnd = options["qsub_id"]
-    except KeyError:
-        rnd = RND
+    # try:
+    #     rnd = options["qsub_id"]
+    # except KeyError:
+    #     rnd = RND
 
     for idx, _file in enumerate(runfiles):
         # create qsub runfile
         qsub_run_file_name = _file.with_name(f"{_file.stem}{'.run'}")
-        remote_qsub_run_file_name = Path.joinpath(qsub_tmp_dir, qsub_run_file_name.name)
-        remote_json_file = Path.joinpath(qsub_tmp_dir, _file.name)
+        remote_qsub_run_file_name = Path.joinpath(qsub_dir, qsub_run_file_name.name)
+        remote_json_file = Path.joinpath(qsub_dir, _file.name)
         dummy_str = get_runfile_str_arr_module(
             remote_json_file,
-            wd=qsub_tmp_dir,
+            wd=qsub_dir,
             script_name=remote_qsub_run_file_name,
             queue_name=qsub_queue,
             module=options["env_mod"],
@@ -187,10 +187,8 @@ def run_queue(
         print(f"Wrote {qsub_run_file_name}")
 
         qsub_start_file_name = _file.with_name(f"{_file.stem}{'.sh'}")
-        remote_qsub_run_file_name = Path.joinpath(qsub_tmp_dir, qsub_run_file_name.name)
-        remote_qsub_start_file_name = Path.joinpath(
-            qsub_tmp_dir, qsub_start_file_name.name
-        )
+        remote_qsub_run_file_name = Path.joinpath(qsub_dir, qsub_run_file_name.name)
+        remote_qsub_start_file_name = Path.joinpath(qsub_dir, qsub_start_file_name.name)
 
         start_script_arr = []
         start_script_arr.append("#!/bin/bash -l")
