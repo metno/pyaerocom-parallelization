@@ -465,7 +465,7 @@ def combine_output(options: dict):
             shutil.rmtree(options["outdir"])
         except (FileNotFoundError, OSError):
             pass
-        Path.mkdir(options["outdir"], exist_ok=False)
+        Path.mkdir(options["outdir"], parents=True, exist_ok=True)
     except FileExistsError:
         pass
 
