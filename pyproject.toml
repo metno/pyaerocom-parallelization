@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyaerocom_parallelization"
-version = "0.4.0"
+version = "0.4.1"
 authors = [{ name = "MET Norway" }]
 description = "run pyaerocom aeroval tasks in parallel on the Met Norway PPI infrastructure"
 readme = "README.md"
@@ -21,7 +21,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Atmospheric Science",
 ]
 requires-python = ">=3.10"
-dependencies = ["simplejson"]
+dependencies = ["simplejson", "pyaerocom>=0.16.0"]
 
 [project.urls]
 "Homepage" = "https://github.com/metno/pyaerocom-parallelization"

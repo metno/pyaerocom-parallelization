@@ -50,6 +50,7 @@ from aeroval_parallelize.tools import (  # CONDA_ENV,; JSON_RUNSCRIPT,; QSUB_HOS
     read_config_var,
     run_queue,
     run_queue_simple,
+    ENV_MODULE_NAME,
 )
 
 CACHE_CREATION_CMD = ["pyaerocom_cachegen"]
@@ -77,28 +78,29 @@ def main():
         description="command line interface to aeroval parallelisation.",
         epilog=f"""{colors['BOLD']}Example usages:{colors['END']}
 
-{colors['UNDERLINE']}run script on qsub host and do not submit jobs to queue:{colors['END']}
-    {script_name} --noqsub -l <cfg-file>
+{colors['UNDERLINE']}submit jobs to queue; parameters as defaults:{colors['END']}
+    {script_name} <cfg-file>
 
-{colors['UNDERLINE']}run script on qsub host and run just the cache file generation:{colors['END']}
-    {script_name} -l --cachegen-only <cfg-file>
+{colors['UNDERLINE']}do not submit jobs to queue (dry-run):{colors['END']}
+    {script_name} --dry-qsub <cfg-file>
 
-{colors['UNDERLINE']}run script on workstation, set directory of aeroval files and submit to queue via qsub host:{colors['END']}
-   {script_name}  --remotetempdir <directory for aeroval files> <cfg-file>
-   
-   Note that the directory for aeroval files needs to be on a common file system for all cluster machines.
-   
+{colors['UNDERLINE']}submit jobs to queue; use special module:{colors['END']}
+    {script_name} -m /modules/MET/rhel8/user-modules/fou-kl/aerotools/pya-v2024.03.conda <cfg-file>
+
+{colors['UNDERLINE']}run just the cache file generation:{colors['END']}
+    {script_name} --cachegen-only <cfg-file>
+
 {colors['UNDERLINE']}set data directories and submit to queue:{colors['END']}
     {script_name} --json_basedir /tmp/data --coldata_basedir /tmp/coldata --io_aux_file /tmp/gridded_io_aux.py <cfg-file>
 
-{colors['UNDERLINE']}assemble aeroval data after a parallel run has been finished: (runs always on the local machine){colors['END']}
-    {colors['BOLD']} The output directory needs to be the target experiment's output path ! {colors['END']}
+{colors['UNDERLINE']}assemble aeroval data after a parallel run has been finished:{colors['END']}
+    {colors['BOLD']}The output directory needs to be the target experiment's output path ! {colors['END']}
     {script_name} -c -o <output directory> <input directories>
     {script_name} -c -o ${{HOME}}/tmp/testing/IASI/ ${{HOME}}/tmpt39n2gp_*
 
 {colors['UNDERLINE']}adjust all variable and model orders to the one given in a aeroval config file:{colors['END']}
     {script_name} --adjustall <aeroval-cfg-file> <path to menu.json>
-    {script_name} --adjustall  /tmp/config/cfg_cams2-82_IFS_beta.py /tmp/data/testmerge_all/IFS-beta/menu.json
+    {script_name} --adjustall /tmp/config/cfg_cams2-82_IFS_beta.py /tmp/data/testmerge_all/IFS-beta/menu.json
 
     
 """,
@@ -108,15 +110,16 @@ def main():
         help="file(s) to read, directories to combine (if -c switch is used)",
         nargs="+",
     )
+
     parser.add_argument(
         "-v", "--verbose", help="switch on verbosity", action="store_true"
     )
 
     parser.add_argument(
-        "-e",
-        "--env",
-        help=f"conda env used to run the aeroval analysis; defaults to {CONDA_ENV}",
-        default=CONDA_ENV,
+        "-m",
+        "--module",
+        help=f"environment module to use; defaults to {ENV_MODULE_NAME}",
+        default=ENV_MODULE_NAME,
     )
     parser.add_argument(
         "--jsonrunscript",
@@ -134,11 +137,6 @@ def main():
         default=TMP_DIR,
     )
     parser.add_argument(
-        "--remotetempdir",
-        help=f"directory for temporary files on qsub node; defaults to {TMP_DIR}",
-        default=TMP_DIR,
-    )
-    parser.add_argument(
         "--json_basedir",
         help="set json_basedir in the config manually",
     )
@@ -151,12 +149,6 @@ def main():
         help="set io_aux_file in the configuration file manually",
     )
 
-    parser.add_argument(
-        "-l",
-        "--localhost",
-        help="start queue submission on localhost",
-        action="store_true",
-    )
     group_caching = parser.add_argument_group(
         "caching options", "options for cache file generation"
     )
@@ -186,16 +178,11 @@ def main():
         default=QSUB_SHORT_QUEUE_NAME,
     )
     group_queue_opts.add_argument(
-        "--qsub-host",
-        help=f"queue submission host; defaults to {QSUB_HOST}",
-        default=QSUB_HOST,
-    )
-    group_queue_opts.add_argument(
         "--queue-user", help=f"queue user; defaults to {QSUB_USER}"
     )
     group_queue_opts.add_argument(
-        "--noqsub",
-        help="do not submit to queue (all files created and copied, but no submission)",
+        "--dry-qsub",
+        help="do not submit to queue (all files created, but no submission)",
         action="store_true",
     )
     group_queue_opts.add_argument(
@@ -223,7 +210,7 @@ def main():
     )
 
     group_assembly = parser.add_argument_group(
-        "data assembly", "options for assembly of parallisations output"
+        "data assembly", "options for assembly of parallelizations output"
     )
     group_assembly.add_argument(
         "-o", "--outdir", help="output directory for experiment assembly"
@@ -293,24 +280,21 @@ def main():
     else:
         options["verbose"] = False
 
-    if args.noqsub:
-        options["noqsub"] = True
+    if args.dry_qsub:
+        options["dry_qsub"] = True
     else:
-        options["noqsub"] = False
+        options["dry_qsub"] = False
 
-    if args.env:
-        options["conda_env_name"] = args.env
+    if args.module:
+        options["env_mod"] = args.module
+    else:
+        options["env_mod"] = ENV_MODULE_NAME
 
     if args.queue:
         options["qsub_queue_name"] = args.queue
 
     if args.cache_queue:
         options["qsub_cache_queue_name"] = args.cache_queue
-
-    if args.qsub_host:
-        options["qsub_host"] = args.qsub_host
-    else:
-        options["qsub_host"] = QSUB_HOST
 
     if args.queue_user:
         options["qsub_user"] = args.queue_user
@@ -347,9 +331,6 @@ def main():
     if args.tempdir:
         options["tempdir"] = Path(args.tempdir)
 
-    if args.remotetempdir:
-        options["remotetempdir"] = Path(args.remotetempdir)
-
     if args.cfgvar:
         options["cfgvar"] = args.cfgvar
 
@@ -367,11 +348,6 @@ def main():
     else:
         options["combinedirs"] = False
 
-    if args.localhost:
-        options["localhost"] = True
-    else:
-        options["localhost"] = False
-
     if args.outdir:
         options["outdir"] = Path(args.outdir)
 
@@ -382,10 +358,6 @@ Please add an output directory using the -o switch."""
         print(error_str)
         sys.exit(1)
 
-    if options["localhost"]:
-        info_str = "INFO: starting queue submission on localhost (-l flag is set)."
-        print(info_str)
-
     if (
         not options["combinedirs"]
         and not options["adjustmenujson"]
@@ -395,7 +367,7 @@ Please add an output directory using the -o switch."""
         # create aeroval config file for the queue
         # for now one for each model and Obsnetwork combination
         runfiles, cache_job_id_mask, json_run_dirs, tempdir = prep_files(options)
-        host_str = f"{options['qsub_user']}@{options['qsub_host']}"
+        # host_str = f"{options['qsub_user']}@{options['qsub_host']}"
         if not options["nocache"]:
             # CREATE CACHE
             # now start cache file generation using the command line for simplicity
@@ -438,13 +410,12 @@ Please add an output directory using the -o switch."""
 
                 # cache creation is started via the command line for simplicity
                 cmd_arr = [*CACHE_CREATION_CMD]
-                if options["localhost"]:
-                    cmd_arr += ["-l"]
-                if "conda_env_name" in options:
-                    cmd_arr += ["-e", options["conda_env_name"]]
+                # if options["localhost"]:
+                #     cmd_arr += ["-l"]
+                if "env_mod" in options and options["env_mod"] != ENV_MODULE_NAME:
+                    cmd_arr += ["-m", options["env_mod"]]
                 # append queue options
                 queue_opts = [
-                    "--qsub",
                     "--queue",
                     options["qsub_cache_queue_name"],
                     "--ram",
@@ -457,12 +428,13 @@ Please add an output directory using the -o switch."""
                     # emulates the qsub tempdir from the later run_queue method
                     # the goal is to use always just one qsub directory for the cache
                     # file generation and the aeroval parallelization
-                    os.path.join(
-                        options["qsub_dir"], f"qsub.{Path(tempdir).parts[-1]}"
-                    ),
+                    f"{tempdir}",
                 ]
-                if options["noqsub"]:
+                # qsub or dry-qsub?
+                if options["dry_qsub"]:
                     queue_opts += ["--dry-qsub"]
+                else:
+                    queue_opts += ["--qsub"]
                 cmd_arr += queue_opts
                 for obs_net in conf_info:
                     cmd_tmp_arr = cmd_arr
@@ -482,7 +454,7 @@ Please add an output directory using the -o switch."""
                     else:
                         print("success...")
 
-        if options["noqsub"] and options["verbose"]:
+        if options["dry_qsub"] and options["verbose"]:
             # just print the to be run files
             for _runfile in runfiles:
                 print(f"created {_runfile}")
@@ -492,8 +464,9 @@ Please add an output directory using the -o switch."""
         else:
             run_queue(
                 runfiles,
-                submit_flag=(not options["noqsub"]),
+                submit_flag=(not options["dry_qsub"]),
                 qsub_queue=options["qsub_queue_name"],
+                qsub_dir=tempdir,
                 options=options,
             )
             conf = read_config_var(config_file=runfiles[0], cfgvar=options["cfgvar"])
@@ -509,8 +482,6 @@ Please add an output directory using the -o switch."""
                         Path(json_dir).parent, conf["proj_id"], conf["exp_id"]
                     )
                 )
-                # _dir = str(Path.joinpath(Path(json_dir).parent, conf["proj_id"]))
-                # _dir = str(Path(json_dir).parent)
                 try:
                     wds[_dir].append(json_dir)
                 except KeyError:
@@ -524,9 +495,10 @@ Please add an output directory using the -o switch."""
                     wd=Path(out_dir).parent.parent,
                     ram=options["assemblyram"],
                     queue_name=options["qsub_queue_name"],
+                    module=options["env_mod"],
                 )
                 qsub_start_file_name = Path.joinpath(
-                    Path(runfiles[0]).parent, f"pya_{rnd}_data_merging.run"
+                    Path(tempdir), f"pya_{rnd}_data_merging.run"
                 )
 
                 # Now add the reordering job. Just add that to the pure assembly job
@@ -548,7 +520,8 @@ Please add an output directory using the -o switch."""
                     f.write(assembly_script_str)
                 run_queue_simple(
                     [qsub_start_file_name],
-                    submit_flag=(not options["noqsub"]),
+                    submit_flag=(not options["dry_qsub"]),
+                    qsub_dir=tempdir,
                     options=options,
                 )
 
