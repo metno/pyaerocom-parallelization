@@ -1,15 +1,27 @@
 # pyaerocom-parallelization
 project to run pyaerocom aeroval tasks in parallel on the Met Norway PPI infrastructure
 
+## Installation
+Standard installation is done via pip:
+
+```bash
+python -m pip install 'git+https://github.com/metno/pyaerocom-parallelization.git'
+```
+
+For a different branch than main
+```bash
+python -m pip install 'git+https://github.com/metno/pyaerocom-parallelization.git@<branch name>'
+```
+
 ## general concept
 
 - aeroval config files need to be on PPI
-- aeroval config files can be run in parallel by running all models. 
-- The whole parallelisation happens in four steps:
+- aeroval config files can be run in parallel by running all models in parallel.
+- The whole parallelisation happens in five steps:
   1. create cache files so that all parallel jobs have always a cache hit (for non pyaro obs networks)
-  2. submit aeroval config file in parallel
+  2. submit aeroval config files in parallel (one job per model)
   3. assemble the json files (after all jobs have finished)
-  4. adjust variable and model order
+  4. adjust variable and model order (since aeroval actively uses the order in the json files)
   5. remove temporary data (omitted atm)
 - As runtime environment the aerotools modules are supported. The standard module used is `/modules/MET/rhel8/user-modules/fou-kl/aerotools/aerotools.conda`
 Please note that the used module needs to provide the command line interface of the parallelization (e.g. the 
@@ -30,6 +42,8 @@ pya-v2024.03.ratpm25pm10.conda
 ```
 In order for them to work, the entire path has to be given. In the case of the preinstalled modules that path is 
 `/modules/MET/rhel8/user-modules/fou-kl/aerotools/`
+
+If you want to use your own module, you have to make sure parallelization has been installed there as well. 
 
 If everything went right, the command `aeroval_parallelize -h` should give you the following output:
 ```markdown
@@ -170,20 +184,72 @@ it is available as the command `pyaerocom_cachegen`
 
 ### minimal documentation
 
-__start cache creation serially on localhost__
+__help screen__
+```markdown
+usage: pyaerocom_cachegen [-h] [--vars VARS [VARS ...]] [-o OBSNETWORKS [OBSNETWORKS ...]] [-v] [--tempdir TEMPDIR]
+                          [-m MODULE] [-p] [--queue QUEUE] [--queue-user QUEUE_USER] [--qsub] [--qsub-id QSUB_ID]
+                          [--qsub-dir QSUB_DIR] [--dry-qsub] [-s SUBMISSION_DIR] [-r RAM]
 
-  ```
-  pyaerocom_cachegen --vars concpm10 concpm25 -o EEAAQeRep.v2
-  ```
+command line interface to pyaerocom cache file generator pyaerocom_cachegen.
 
-__create all file necessary for queue submission, but don't submit to queue (testing)__
+options:
+  -h, --help            show this help message and exit
+  --vars VARS [VARS ...]
+                        variable name(s) to cache
+  -o OBSNETWORKS [OBSNETWORKS ...], --obsnetworks OBSNETWORKS [OBSNETWORKS ...]
+                        obs networks(s) names to cache
+  -v, --verbose         switch on verbosity
+  --tempdir TEMPDIR     directory for temporary files; defaults to /tmp
+  -m MODULE, --module MODULE
+                        environment module to use; defaults to /modules/MET/rhel8/user-modules/fou-
+                        kl/aerotools/aerotools.conda
+  -p, --printobsnetworks
+                        just print the names of the supported obs network
 
-  ```
-  pyaerocom_cachegen --qsub --vars ang4487aer od550aer -o AeronetSunV3Lev2.daily
-  ```
+queue options:
+  options for running on PPI
+
+  --queue QUEUE         queue name to submit the jobs to; defaults to research-r8.q
+  --queue-user QUEUE_USER
+                        queue user; defaults to jang
+  --qsub                submit to queue using the qsub command
+  --qsub-id QSUB_ID     id under which the qsub commands will be run. Needed only for automation.
+  --qsub-dir QSUB_DIR   directory under which the qsub scripts will be stored. defaults to
+                        /lustre/storeB/users/jang/submission_scripts, needs to be on fs mounted by all queue hosts.
+  --dry-qsub            create all files for qsub, but do not submit to queue
+  -s SUBMISSION_DIR, --submission-dir SUBMISSION_DIR
+                        directory submission scripts
+  -r RAM, --ram RAM     RAM usage [GB] for queue
+
+__Example usages__:
+start cache generation serially
+pyaerocom_cachegen --vars concpm10 concpm25 -o EEAAQeRep.v2
+
+dry run cache generation for queue job
+pyaerocom_cachegen --dry-qsub --vars ang4487aer od550aer -o AeronetSunV3Lev2.daily
+
+use special module at queue run (__full module path needed!__)
+pyaerocom_cachegen -m /modules/MET/rhel8/user-modules/fou-kl/aerotools/pya-v2024.03 --vars ang4487aer od550aer -o AeronetSunV3Lev2.daily
+
+start cache generation parallel on PPI queue
+pyaerocom_cachegen --qsub --vars ang4487aer od550aer -o AeronetSunV3Lev2.daily
+pyaerocom_cachegen --qsub --vars concpm10 concpm25 vmro3 concno2 -o EEAAQeRep.NRT
+
+```
+
 
 __start cache creation on default queue__
 
   ```
   pyaerocom_cachegen --qsub --vars concpm10 concpm25 vmro3 concno2 -o EEAAQeRep.NRT
+  ```
+__start cache creation serially__
+
+  ```
+  pyaerocom_cachegen --vars concpm10 concpm25 -o EEAAQeRep.v2
+  ```
+__create all files necessary for queue submission, but don't submit to queue (testing)__
+
+  ```
+  pyaerocom_cachegen --dry-qsub --vars ang4487aer od550aer -o AeronetSunV3Lev2.daily
   ```
