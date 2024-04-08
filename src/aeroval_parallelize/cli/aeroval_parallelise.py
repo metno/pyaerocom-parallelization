@@ -495,7 +495,7 @@ Please add an output directory using the -o switch."""
                     wd=Path(out_dir).parent.parent,
                     ram=options["assemblyram"],
                     queue_name=options["qsub_queue_name"],
-                    module=options["env_mod"]
+                    module=options["env_mod"],
                 )
                 qsub_start_file_name = Path.joinpath(
                     Path(tempdir), f"pya_{rnd}_data_merging.run"
