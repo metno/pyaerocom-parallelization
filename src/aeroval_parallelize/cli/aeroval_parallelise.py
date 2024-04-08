@@ -85,7 +85,7 @@ def main():
     {script_name} --dry-qsub <cfg-file>
 
 {colors['UNDERLINE']}submit jobs to queue; use special module:{colors['END']}
-    {script_name} -m /modules/MET/rhel8/user-modules/fou-kl/aerotools/pya-v2024.03 <cfg-file>
+    {script_name} -m /modules/MET/rhel8/user-modules/fou-kl/aerotools/pya-v2024.03.conda <cfg-file>
 
 {colors['UNDERLINE']}run just the cache file generation:{colors['END']}
     {script_name} --cachegen-only <cfg-file>
@@ -115,12 +115,6 @@ def main():
         "-v", "--verbose", help="switch on verbosity", action="store_true"
     )
 
-    # parser.add_argument(
-    #     "-e",
-    #     "--env",
-    #     help=f"conda env used to run the aeroval analysis; defaults to {CONDA_ENV}",
-    #     default=CONDA_ENV,
-    # )
     parser.add_argument(
         "-m",
         "--module",
@@ -142,11 +136,6 @@ def main():
         help=f"directory for temporary files; defaults to {TMP_DIR}",
         default=TMP_DIR,
     )
-    # parser.add_argument(
-    #     "--remotetempdir",
-    #     help=f"directory for temporary files on qsub node; defaults to {TMP_DIR}",
-    #     default=TMP_DIR,
-    # )
     parser.add_argument(
         "--json_basedir",
         help="set json_basedir in the config manually",
@@ -160,12 +149,6 @@ def main():
         help="set io_aux_file in the configuration file manually",
     )
 
-    # parser.add_argument(
-    #     "-l",
-    #     "--localhost",
-    #     help="start queue submission on localhost",
-    #     action="store_true",
-    # )
     group_caching = parser.add_argument_group(
         "caching options", "options for cache file generation"
     )
@@ -194,11 +177,6 @@ def main():
         help=f"queue name to submit the caching jobs to; defaults to {QSUB_SHORT_QUEUE_NAME}",
         default=QSUB_SHORT_QUEUE_NAME,
     )
-    # group_queue_opts.add_argument(
-    #     "--qsub-host",
-    #     help=f"queue submission host; defaults to {QSUB_HOST}",
-    #     default=QSUB_HOST,
-    # )
     group_queue_opts.add_argument(
         "--queue-user", help=f"queue user; defaults to {QSUB_USER}"
     )
@@ -318,11 +296,6 @@ def main():
     if args.cache_queue:
         options["qsub_cache_queue_name"] = args.cache_queue
 
-    # if args.qsub_host:
-    #     options["qsub_host"] = args.qsub_host
-    # else:
-    #     options["qsub_host"] = QSUB_HOST
-
     if args.queue_user:
         options["qsub_user"] = args.queue_user
     else:
@@ -358,9 +331,6 @@ def main():
     if args.tempdir:
         options["tempdir"] = Path(args.tempdir)
 
-    # if args.remotetempdir:
-    #     options["remotetempdir"] = Path(args.remotetempdir)
-
     if args.cfgvar:
         options["cfgvar"] = args.cfgvar
 
@@ -378,11 +348,6 @@ def main():
     else:
         options["combinedirs"] = False
 
-    # if args.localhost:
-    #     options["localhost"] = True
-    # else:
-    #     options["localhost"] = False
-
     if args.outdir:
         options["outdir"] = Path(args.outdir)
 
@@ -392,10 +357,6 @@ def main():
 Please add an output directory using the -o switch."""
         print(error_str)
         sys.exit(1)
-
-    # if options["localhost"]:
-    #     info_str = "INFO: starting queue submission on localhost (-l flag is set)."
-    #     print(info_str)
 
     if (
         not options["combinedirs"]
@@ -521,8 +482,6 @@ Please add an output directory using the -o switch."""
                         Path(json_dir).parent, conf["proj_id"], conf["exp_id"]
                     )
                 )
-                # _dir = str(Path.joinpath(Path(json_dir).parent, conf["proj_id"]))
-                # _dir = str(Path(json_dir).parent)
                 try:
                     wds[_dir].append(json_dir)
                 except KeyError:
