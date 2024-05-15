@@ -7,6 +7,7 @@ import argparse
 
 import simplejson as json
 import jsonpickle
+from fnmatch import fnmatch
 from aeroval_parallelize.const import JSON_EXT, PICKLE_JSON_EXT
 
 
