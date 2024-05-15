@@ -71,3 +71,6 @@ DEFAULT_ASSEMBLY_RAM = 10
 # depending on which module we use, we might need to chnage the python interpreter
 # therefore make it easy to changed that
 DEFAULT_PYTHON = "python"
+
+JSON_EXT = ".json"
+PICKLE_JSON_EXT = ".picklejson"

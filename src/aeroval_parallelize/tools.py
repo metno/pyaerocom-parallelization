@@ -14,7 +14,7 @@ from copy import deepcopy
 from datetime import datetime
 from fnmatch import fnmatch
 from getpass import getuser
-from importlib.machinery import SourceFileLoader
+import importlib
 from pathlib import Path
 from random import randint
 from socket import gethostname
@@ -47,6 +47,8 @@ from aeroval_parallelize.const import (
     DEFAULT_CACHE_RAM,
     ENV_MODULE_NAME,
     DEFAULT_PYTHON,
+    JSON_EXT,
+    PICKLE_JSON_EXT,
 )
 
 # DEFAULT_CFG_VAR = "CFG"
@@ -139,19 +141,28 @@ def prep_files(options):
 
     for _file in options["files"]:
         # read aeroval config file
-        if fnmatch(_file, "*.py"):
-            foo = SourceFileLoader("bla", _file).load_module()
-            # the following line does unfortunately not work since a module is not subscriptable
-            # CFG = foo[options["cfgvar"]]
-            # use getattr instead
-            cfg = deepcopy(getattr(foo, options["cfgvar"]))
-
-        elif fnmatch(_file, "*.json"):
-            with open(_file, "r", encoding="utf-8") as j:
-                cfg = json.load(j)
-        else:
-            print(f"skipping file {_file} due to wrong file extension")
-            continue
+        cfg = read_config_var(config_file=_file, cfgvar=options["cfgvar"])
+        # if fnmatch(_file, "*.py"):
+        #     module_name = "dummy_mod"
+        #     spec = importlib.util.spec_from_file_location(module_name, _file)
+        #     module = importlib.util.module_from_spec(spec)
+        #     sys.modules[module_name] = module
+        #     spec.loader.exec_module(module)
+        #     # the following line does unfortunately not work since a module is not subscriptable
+        #     # CFG = module[options["cfgvar"]]
+        #     # use getattr instead
+        #     cfg = deepcopy(getattr(module, options["cfgvar"]))
+        #
+        # elif fnmatch(_file, f"*.{JSON_EXT}"):
+        #     with open(_file, "r", encoding="utf-8") as j:
+        #         cfg = json.load(j)
+        # elif fnmatch(_file, f"*.{PICKLE_JSON_EXT}"):
+        #     with open(_file, "r", encoding="utf-8") as j:
+        #         json_string = infile.read()
+        #     cfg = jsonpickle.decode(json_string)
+        # else:
+        #     print(f"skipping file {_file} due to wrong file extension")
+        #     continue
 
         # make some adjustments to the config file
         # e.g. adjust the json_basedir and the coldata_basedir entries
@@ -211,7 +222,7 @@ def prep_files(options):
                     ] = f"{cfg['coldata_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
                     cfg_file = Path(_file).stem
                     outfile = Path(tempdir).joinpath(
-                        f"{cfg_file}_{_model}_{_obs_network}.json"
+                        f"{cfg_file}_{_model}_{_obs_network}{PICKLE_JSON_EXT}"
                     )
                     # the parallelisation is based on obs network for now only, while the cache
                     # generation runs the variables in parallel already
@@ -238,7 +249,7 @@ def prep_files(options):
                 ] = f"{cfg['coldata_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
                 cfg_file = Path(_file).stem
                 outfile = Path(tempdir).joinpath(
-                    f"{cfg_file}_{_model}_{_obs_network}.json"
+                    f"{cfg_file}_{_model}_{_obs_network}{PICKLE_JSON_EXT}"
                 )
                 # cache_job_id_mask[outfile] = f"{QSUB_SCRIPT_START}{_obs_network}*"
                 cache_job_id_mask[outfile] = f"{QSUB_SCRIPT_START}*"
@@ -670,18 +681,27 @@ def read_config_var(config_file: str, cfgvar: str = "CFG") -> dict:
     returns the config variable"""
 
     # read aeroval configuration file
-    if fnmatch(config_file, "*.py"):
-        foo = SourceFileLoader("bla", config_file).load_module()
+    _file = config_file
+    if fnmatch(_file, "*.py"):
+        module_name = "dummy_mod"
+        spec = importlib.util.spec_from_file_location(module_name, _file)
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[module_name] = module
+        spec.loader.exec_module(module)
         # the following line does unfortunately not work since a module is not subscriptable
-        # CFG = foo[options["cfgvar"]]
+        # CFG = module[options["cfgvar"]]
         # use getattr instead
-        cfg = deepcopy(getattr(foo, cfgvar))
+        cfg = deepcopy(getattr(module, cfgvar))
 
-    elif fnmatch(config_file, "*.json"):
-        with open(config_file, "r") as inhandle:
-            cfg = json.load(inhandle)
+    elif fnmatch(_file, f"*{JSON_EXT}"):
+        with open(_file, "r", encoding="utf-8") as j:
+            cfg = json.load(j)
+    elif fnmatch(_file, f"*{PICKLE_JSON_EXT}"):
+        with open(_file, "r", encoding="utf-8") as j:
+            json_string = j.read()
+        cfg = jsonpickle.decode(json_string)
     else:
-        msg = f"""Error: {config_file} has to be either a Python file or a json file.
+        msg = f"""Error: {config_file} has to be either a Python file, a {JSON_EXT} file or a {PICKLE_JSON_EXT} file.
 exiting now..."""
         print(msg)
         sys.exit(1)
