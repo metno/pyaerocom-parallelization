@@ -78,6 +78,47 @@ if __name__ == "__main__":
     os.chmod(filename, st.st_mode | stat.S_IEXEC)
 
 
+def write_script_pyaro(
+    filename: str | Path,
+    var: str = "od550aer",
+    pyaro_config_dict: dict[str, Any] = None,
+    obsnetwork: str = "AeronetSunV3Lev2.daily",
+    use_module: bool = False,
+):
+    """version for run without"""
+    import os
+    import stat
+    from pyaerocom.io import PyaroConfig, ReadPyaro
+
+    config = PyaroConfig(pyaro_config_dict)
+    rp = ReadPyaro(config=config)
+    data = obj.read()
+
+    if use_module:
+        shebang = f"#!/usr/bin/env {DEFAULT_PYTHON}"
+    else:
+        shebang = "#!/usr/bin/env python"
+
+    script_proto = f"""{shebang}
+    
+from pyaerocom.io import ReadUngridded
+from pyaerocom.io import PyaroConfig, ReadPyaro
+
+def main():
+    reader = ReadUngridded("{obsnetwork}")
+    data = reader.read(vars_to_retrieve="{var}")
+
+if __name__ == "__main__":
+    main()
+"""
+    with open(filename, "w") as f:
+        f.write(script_proto)
+
+    # make executable
+    st = os.stat(filename)
+    os.chmod(filename, st.st_mode | stat.S_IEXEC)
+
+
 def get_runfile_str_arr_module(
     file,
     queue_name=QSUB_QUEUE_NAME,

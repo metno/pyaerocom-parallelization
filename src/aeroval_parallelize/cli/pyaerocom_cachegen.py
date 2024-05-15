@@ -7,6 +7,7 @@ for usage via the PPI queues
 from __future__ import annotations
 
 import argparse
+import os.path
 import subprocess
 import sys
 from pathlib import Path
@@ -21,6 +22,7 @@ from aeroval_parallelize.cache_tools import (
     TMP_DIR,
     run_queue,
     write_script,
+    write_script_pyaro,
     DEFAULT_CACHE_RAM,
     ENV_MODULE_NAME,
 )
@@ -56,6 +58,9 @@ def main():
     """,
     )
     parser.add_argument("--vars", help="variable name(s) to cache", nargs="+")
+    parser.add_argument(
+        "--obsconfigfile", help="picklejson config file for pyaro config", nargs=1
+    )
     parser.add_argument(
         "-o", "--obsnetworks", help="obs networks(s) names to cache", nargs="+"
     )
@@ -124,6 +129,13 @@ def main():
     options = {}
     if args.vars:
         options["vars"] = args.vars
+
+    if args.obsconfigfile:
+        options["obsconfigfile"] = args.obsconfigfile[0]
+        if os.path.exists(options["obsconfigfile"]):
+            with open(options["obsconfigfile"], "r") as f:
+                json_str = f.read()
+            obsconf = jsonpickle.decode(json_str)
 
     if args.printobsnetworks:
         from pyaerocom import const
@@ -231,6 +243,20 @@ def main():
     else:
         tempdir = Path(mkdtemp(dir=options["tempdir"]))
         use_module = False
+
+    if "obsconfigfile" in options:
+        # PYARO!
+        pass
+        for var in options["vars"]:
+            # write python file
+            obs_network = obsconf.name
+
+            outfile = tempdir.joinpath(f"pya_{rnd}_caching_{obs_network}_{var}.py")
+            write_script_pyaro(
+                outfile, var=var, obsnetwork=obs_network, use_module=use_module
+            )
+            print(f"Wrote {outfile}")
+            scripts_to_run.append(outfile)
 
     for obs_network in options["obsnetworks"]:
         for var in options["vars"]:
