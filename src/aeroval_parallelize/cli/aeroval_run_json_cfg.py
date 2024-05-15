@@ -6,6 +6,7 @@ small helper program to read a aeroval config from a json file
 import argparse
 
 import simplejson as json
+import jsonpickle
 
 
 def main():
@@ -31,7 +32,9 @@ def main():
 
     for _file in options["files"]:
         with open(_file, "r") as infile:
-            CFG = json.load(infile)
+            # CFG = json.load(infile)
+            json_string = infile.read()
+        CFG = jsonpickle.decode(json_string)
         stp = EvalSetup(
             **CFG,
         )

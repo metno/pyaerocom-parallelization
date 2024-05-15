@@ -21,6 +21,8 @@ from socket import gethostname
 from tempfile import mkdtemp
 from threading import Thread
 from uuid import uuid4
+import jsonpickle
+
 
 import simplejson as json
 
@@ -215,8 +217,10 @@ def prep_files(options):
                     # generation runs the variables in parallel already
                     cache_job_id_mask[outfile] = f"{QSUB_SCRIPT_START}{pya_obsid}*"
                     print(f"writing file {outfile}")
+                    json_string = jsonpickle.encode(out_cfg)
                     with open(outfile, "w", encoding="utf-8") as j:
-                        json.dump(out_cfg, j, ensure_ascii=False, indent=4)
+                        j.write(json_string)
+                        # json.dump(out_cfg, j, ensure_ascii=False, indent=4)
                     dir_idx += 1
                     runfiles.append(outfile)
                     if options["verbose"]:
@@ -239,8 +243,10 @@ def prep_files(options):
                 # cache_job_id_mask[outfile] = f"{QSUB_SCRIPT_START}{_obs_network}*"
                 cache_job_id_mask[outfile] = f"{QSUB_SCRIPT_START}*"
                 print(f"writing file {outfile}")
+                json_string = jsonpickle.encode(out_cfg)
                 with open(outfile, "w", encoding="utf-8") as j:
-                    json.dump(out_cfg, j, ensure_ascii=False, indent=4)
+                    j.write(json_string)
+                    # json.dump(out_cfg, j, ensure_ascii=False, indent=4)
                 dir_idx += 1
                 runfiles.append(outfile)
                 if options["verbose"]:

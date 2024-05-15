@@ -11,6 +11,7 @@ import subprocess
 import sys
 from pathlib import Path
 from tempfile import mkdtemp
+import jsonpickle
 
 from aeroval_parallelize.cache_tools import (
     QSUB_DIR,
