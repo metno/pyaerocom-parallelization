@@ -324,8 +324,9 @@ module load {module} >> ${{logfile}} 2>&1
 echo "{DEFAULT_PYTHON} --version" >> ${{logfile}} 2>&1
 {DEFAULT_PYTHON} --version >> ${{logfile}} 2>&1
 pwd >> ${{logfile}} 2>&1
+export PYAEROCOM_LOG_FILE=${{logfile}}
 echo "starting {file} ..." >> ${{logfile}}
-{str(JSON_RUNSCRIPT)} {str(file)} >> ${{logfile}} 2>&1
+{str(JSON_RUNSCRIPT)} {str(file)}
 
 """
     return runfile_str
