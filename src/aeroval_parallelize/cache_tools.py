@@ -6,14 +6,10 @@ for usage via the PPI queues
 """
 from __future__ import annotations
 
-import argparse
 import subprocess
-import sys
 from datetime import datetime
 
-# from getpass import getuser
 from pathlib import Path
-from tempfile import mkdtemp
 
 from aeroval_parallelize.const import (
     CONDA_ENV,
@@ -44,13 +40,15 @@ START_TIME = datetime.now().strftime("%Y%m%d_%H%M%S")
 QSUB_SCRIPT_START = f"pya_{RND}_caching_"
 
 
-def write_script(
+def write_script_pyaro(
     filename: str | Path,
+    conffile: str | Path = None,
     var: str = "od550aer",
     obsnetwork: str = "AeronetSunV3Lev2.daily",
     use_module: bool = False,
 ):
-    """version for run without"""
+    """1st version for run with pyaro"""
+
     import os
     import stat
 
@@ -62,10 +60,14 @@ def write_script(
     script_proto = f"""{shebang}
     
 from pyaerocom.io import ReadUngridded
+import jsonpickle
 
 def main():
+    with open("{conffile}", "r") as f:
+        json_str = f.read()
+        obsconf = jsonpickle.decode(json_str)
     reader = ReadUngridded("{obsnetwork}")
-    data = reader.read(vars_to_retrieve="{var}")
+    data = reader.read(vars_to_retrieve="{var}", configs=obsconf)
 
 if __name__ == "__main__":
     main()
@@ -78,21 +80,15 @@ if __name__ == "__main__":
     os.chmod(filename, st.st_mode | stat.S_IEXEC)
 
 
-def write_script_pyaro(
+def write_script(
     filename: str | Path,
     var: str = "od550aer",
-    pyaro_config_dict: dict[str, Any] = None,
     obsnetwork: str = "AeronetSunV3Lev2.daily",
     use_module: bool = False,
 ):
-    """version for run without"""
+    """version for run internal obs networks"""
     import os
     import stat
-    from pyaerocom.io import PyaroConfig, ReadPyaro
-
-    config = PyaroConfig(pyaro_config_dict)
-    rp = ReadPyaro(config=config)
-    data = obj.read()
 
     if use_module:
         shebang = f"#!/usr/bin/env {DEFAULT_PYTHON}"
@@ -102,7 +98,6 @@ def write_script_pyaro(
     script_proto = f"""{shebang}
     
 from pyaerocom.io import ReadUngridded
-from pyaerocom.io import PyaroConfig, ReadPyaro
 
 def main():
     reader = ReadUngridded("{obsnetwork}")

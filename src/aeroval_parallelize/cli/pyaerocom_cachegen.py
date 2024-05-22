@@ -253,7 +253,11 @@ def main():
 
             outfile = tempdir.joinpath(f"pya_{rnd}_caching_{obs_network}_{var}.py")
             write_script_pyaro(
-                outfile, var=var, obsnetwork=obs_network, use_module=use_module
+                outfile,
+                var=var,
+                obsnetwork=obs_network,
+                use_module=use_module,
+                conffile=options["obsconfigfile"],
             )
             print(f"Wrote {outfile}")
             scripts_to_run.append(outfile)
