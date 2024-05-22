@@ -261,16 +261,16 @@ def main():
             )
             print(f"Wrote {outfile}")
             scripts_to_run.append(outfile)
-
-    for obs_network in options["obsnetworks"]:
-        for var in options["vars"]:
-            # write python file
-            outfile = tempdir.joinpath(f"pya_{rnd}_caching_{obs_network}_{var}.py")
-            write_script(
-                outfile, var=var, obsnetwork=obs_network, use_module=use_module
-            )
-            print(f"Wrote {outfile}")
-            scripts_to_run.append(outfile)
+    else:
+        for obs_network in options["obsnetworks"]:
+            for var in options["vars"]:
+                # write python file
+                outfile = tempdir.joinpath(f"pya_{rnd}_caching_{obs_network}_{var}.py")
+                write_script(
+                    outfile, var=var, obsnetwork=obs_network, use_module=use_module
+                )
+                print(f"Wrote {outfile}")
+                scripts_to_run.append(outfile)
 
     if options["qsub"] or options["dry_qsub"]:
         # run via queue, either on localhost or qsub submit host
