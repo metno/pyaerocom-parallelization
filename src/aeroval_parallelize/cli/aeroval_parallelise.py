@@ -148,6 +148,10 @@ def main():
         "--io_aux_file",
         help="set io_aux_file in the configuration file manually",
     )
+    parser.add_argument(
+        "--extract_obsconfigfile",
+        help="extract obsconfig files and save to tmp path (mainly for testing)",
+    )
 
     group_caching = parser.add_argument_group(
         "caching options", "options for cache file generation"
@@ -280,6 +284,11 @@ def main():
     else:
         options["verbose"] = False
 
+    if args.extract_obsconfigfile:
+        options["extract_obsconfigfile"] = True
+    else:
+        options["extract_obsconfigfile"] = False
+
     if args.dry_qsub:
         options["dry_qsub"] = True
     else:
@@ -357,6 +366,10 @@ def main():
 Please add an output directory using the -o switch."""
         print(error_str)
         sys.exit(1)
+
+    if options["extract_obsconfigfile"]:
+        # just create the obsconfig files and exit
+        pass
 
     if (
         not options["combinedirs"]
