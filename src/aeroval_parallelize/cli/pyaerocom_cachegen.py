@@ -44,6 +44,8 @@ def main():
         epilog=f"""{colors['BOLD']}Example usages:{colors['END']}
 {colors['UNDERLINE']}start cache generation serially{colors['END']}
 {script_name} --vars concpm10 concpm25 -o EEAAQeRep.v2
+{colors['UNDERLINE']}with pyaro config file{colors['END']}
+{script_name} --vars concpm10 concpm25 -o EEAAQeRep.v2 --obsconfigfile <path to picklejson file>
 
 {colors['UNDERLINE']}dry run cache generation for queue job{colors['END']}
 {script_name} --dry-qsub --vars ang4487aer od550aer -o AeronetSunV3Lev2.daily
