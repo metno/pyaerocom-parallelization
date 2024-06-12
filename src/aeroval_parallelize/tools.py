@@ -142,27 +142,6 @@ def prep_files(options):
     for _file in options["files"]:
         # read aeroval config file
         cfg = read_config_var(config_file=_file, cfgvar=options["cfgvar"])
-        # if fnmatch(_file, "*.py"):
-        #     module_name = "dummy_mod"
-        #     spec = importlib.util.spec_from_file_location(module_name, _file)
-        #     module = importlib.util.module_from_spec(spec)
-        #     sys.modules[module_name] = module
-        #     spec.loader.exec_module(module)
-        #     # the following line does unfortunately not work since a module is not subscriptable
-        #     # CFG = module[options["cfgvar"]]
-        #     # use getattr instead
-        #     cfg = deepcopy(getattr(module, options["cfgvar"]))
-        #
-        # elif fnmatch(_file, f"*.{JSON_EXT}"):
-        #     with open(_file, "r", encoding="utf-8") as j:
-        #         cfg = json.load(j)
-        # elif fnmatch(_file, f"*.{PICKLE_JSON_EXT}"):
-        #     with open(_file, "r", encoding="utf-8") as j:
-        #         json_string = infile.read()
-        #     cfg = jsonpickle.decode(json_string)
-        # else:
-        #     print(f"skipping file {_file} due to wrong file extension")
-        #     continue
 
         # make some adjustments to the config file
         # e.g. adjust the json_basedir and the coldata_basedir entries
@@ -258,12 +237,19 @@ def prep_files(options):
                 with open(outfile, "w", encoding="utf-8") as j:
                     j.write(json_string)
                     # json.dump(out_cfg, j, ensure_ascii=False, indent=4)
+
                 dir_idx += 1
                 runfiles.append(outfile)
                 if options["verbose"]:
                     print(out_cfg)
 
     return runfiles, cache_job_id_mask, json_run_dirs, tempdir
+
+
+def write_obs_config(config: dict, tempdir: [Path, str], outfile: [Path, str]):
+    """write temporary pyro config file so that it can be passed to cache file generation"""
+    data = jsonpickle.dumps(config)
+    pass
 
 
 def get_runfile_str(
@@ -729,9 +715,16 @@ def get_config_info(
         except KeyError:
             pass
 
-        var_config[cfg["obs_cfg"][_obs_network]["obs_id"]] = cfg["obs_cfg"][
+        var_config[cfg["obs_cfg"][_obs_network]["obs_id"]] = {}
+        var_config[cfg["obs_cfg"][_obs_network]["obs_id"]]["obs_vars"] = cfg["obs_cfg"][
             _obs_network
         ]["obs_vars"]
+        # check each obs_cfg entry for pyaro
+        # if it exists, jsonpickle the pyaro config to be passed to cache file generation
+        if "obs_config" in cfg["obs_cfg"][_obs_network]:
+            var_config[cfg["obs_cfg"][_obs_network]["obs_id"]][
+                "obs_config"
+            ] = jsonpickle.encode(cfg["obs_cfg"][_obs_network]["obs_config"])
 
     return var_config
 

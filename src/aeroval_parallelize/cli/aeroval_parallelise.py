@@ -35,6 +35,7 @@ from aeroval_parallelize.const import (
     DEFAULT_CACHE_RAM,
     DEFAULT_ANA_RAM,
     DEFAULT_ASSEMBLY_RAM,
+    PICKLE_JSON_EXT,
 )
 from aeroval_parallelize.tools import (  # CONDA_ENV,; JSON_RUNSCRIPT,; QSUB_HOST,; QSUB_QUEUE_NAME,; QSUB_USER,; TMP_DIR,; RND,; RUN_UUID,
     AEROVAL_HEATMAP_FILES_MASK,
@@ -381,6 +382,7 @@ Please add an output directory using the -o switch."""
         # for now one for each model and Obsnetwork combination
         runfiles, cache_job_id_mask, json_run_dirs, tempdir = prep_files(options)
         # host_str = f"{options['qsub_user']}@{options['qsub_host']}"
+        obs_conf_flag = False
         if not options["nocache"]:
             # CREATE CACHE
             # now start cache file generation using the command line for simplicity
@@ -402,70 +404,93 @@ Please add an output directory using the -o switch."""
                     ]
 
                 conf_info = get_config_info(_aeroval_file, options["cfgvar"])
-                obs_net_key = next(iter(conf_info))
-                if (
-                    obs_net_key in submitted_obs_nets
-                ):  # conf info always has just one key
-                    # Obs net could have been used before, but not necessarily all vars
-                    # the following creates a list of
-                    if all(
-                        item in submitted_obs_nets[obs_net_key]
-                        for item in conf_info[obs_net_key]
-                    ):
-                        continue
-                    else:
-                        submitted_obs_nets[obs_net_key] += list(
-                            set(submitted_obs_nets[obs_net_key])
-                            - set(conf_info[obs_net_key])
-                        )
-                else:
-                    submitted_obs_nets.update(deepcopy(conf_info))
 
-                # cache creation is started via the command line for simplicity
-                cmd_arr = [*CACHE_CREATION_CMD]
-                # if options["localhost"]:
-                #     cmd_arr += ["-l"]
-                if "env_mod" in options and options["env_mod"] != ENV_MODULE_NAME:
-                    cmd_arr += ["-m", options["env_mod"]]
-                # append queue options
-                queue_opts = [
-                    "--queue",
-                    options["qsub_cache_queue_name"],
-                    "--ram",
-                    options["cacheram"],
-                    "--queue-user",
-                    options["qsub_user"],
-                    "--qsub-id",
-                    str(rnd),
-                    "--qsub-dir",
-                    # emulates the qsub tempdir from the later run_queue method
-                    # the goal is to use always just one qsub directory for the cache
-                    # file generation and the aeroval parallelization
-                    f"{tempdir}",
-                ]
-                # qsub or dry-qsub?
-                if options["dry_qsub"]:
-                    queue_opts += ["--dry-qsub"]
-                else:
-                    queue_opts += ["--qsub"]
-                cmd_arr += queue_opts
-                for obs_net in conf_info:
-                    cmd_tmp_arr = cmd_arr
-                    static_opts = [
-                        "--vars",
-                        *conf_info[obs_net],
-                        "-o",
-                        obs_net,
+                for obs_net_key in conf_info:
+                    # obs_net_key = next(iter(conf_info))
+                    if (
+                        obs_net_key in submitted_obs_nets
+                    ):  # conf_info always has just one key
+                        # Obs net could have been used before, but not necessarily all vars
+                        # the following creates a list of
+                        if all(
+                            item in submitted_obs_nets[obs_net_key]
+                            for item in conf_info[obs_net_key]["obs_vars"]
+                        ):
+                            continue
+                        else:
+                            submitted_obs_nets[obs_net_key] += list(
+                                set(submitted_obs_nets[obs_net_key])
+                                - set(conf_info[obs_net_key]["obs_vars"])
+                            )
+                    else:
+                        try:
+                            submitted_obs_nets[obs_net_key] = deepcopy(
+                                conf_info[obs_net_key]["obs_vars"]
+                            )
+                        except KeyError:
+                            submitted_obs_nets[obs_net_key].update(
+                                deepcopy(conf_info[obs_net_key]["obs_vars"])
+                            )
+
+                        # create pyaro config, if necessary
+                        if "obs_config" in conf_info[obs_net_key]:
+                            obs_conf_flag = True
+                            obs_conf_file = Path(tempdir).joinpath(
+                                f"pya_{rnd}_caching_{obs_net_key}{PICKLE_JSON_EXT}"
+                            )
+                            print(f"writing file {obs_conf_file}")
+                            with open(obs_conf_file, "w", encoding="utf-8") as j:
+                                j.write(conf_info[obs_net_key]["obs_config"])
+
+                    # cache creation is started via the command line for simplicity
+                    cmd_arr = [*CACHE_CREATION_CMD]
+                    # if options["localhost"]:
+                    #     cmd_arr += ["-l"]
+                    if "env_mod" in options and options["env_mod"] != ENV_MODULE_NAME:
+                        cmd_arr += ["-m", options["env_mod"]]
+                    # append queue options
+                    queue_opts = [
+                        "--queue",
+                        options["qsub_cache_queue_name"],
+                        "--ram",
+                        options["cacheram"],
+                        "--queue-user",
+                        options["qsub_user"],
+                        "--qsub-id",
+                        str(rnd),
+                        "--qsub-dir",
+                        # emulates the qsub tempdir from the later run_queue method
+                        # the goal is to use always just one qsub directory for the cache
+                        # file generation and the aeroval parallelization
+                        f"{tempdir}",
                     ]
-                    cmd_tmp_arr += static_opts
-
-                    print(f"running command {' '.join(map(str, cmd_tmp_arr))}...")
-                    sh_result = subprocess.run(cmd_tmp_arr, capture_output=True)
-                    print(f"{sh_result.stdout}")
-                    if sh_result.returncode != 0:
-                        continue
+                    if obs_conf_flag:
+                        cmd_arr += ["--obsconfigfile", obs_conf_file]
+                    # qsub or dry-qsub?
+                    if options["dry_qsub"]:
+                        queue_opts += ["--dry-qsub"]
                     else:
-                        print("success...")
+                        queue_opts += ["--qsub"]
+                    cmd_arr += queue_opts
+                    for obs_net in conf_info:
+                        cmd_tmp_arr = cmd_arr
+                        # only needed if there's no obsconfig file
+                        if not obs_conf_flag:
+                            static_opts = [
+                                "--vars",
+                                *conf_info[obs_net],
+                                "-o",
+                                obs_net,
+                            ]
+                            cmd_tmp_arr += static_opts
+
+                        print(f"running command {' '.join(map(str, cmd_tmp_arr))}...")
+                        sh_result = subprocess.run(cmd_tmp_arr, capture_output=True)
+                        print(f"{sh_result.stdout}")
+                        if sh_result.returncode != 0:
+                            continue
+                        else:
+                            print("success...")
 
         if options["dry_qsub"] and options["verbose"]:
             # just print the to be run files
