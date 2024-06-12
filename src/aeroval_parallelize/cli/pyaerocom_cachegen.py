@@ -249,7 +249,13 @@ def main():
     if "obsconfigfile" in options:
         # PYARO!
         pass
-        for var in options["vars"]:
+        # TODO: Get the vars from the obsconfig file!
+        with open(options["obsconfigfile"], "r") as infile:
+            json_string = infile.read()
+        pyaro_cfg = jsonpickle.decode(json_string)
+
+        # for var in options["vars"]:
+        for var in list(set(pyaro_cfg.name_map.values())):
             # write python file
             obs_network = obsconf.name
 
