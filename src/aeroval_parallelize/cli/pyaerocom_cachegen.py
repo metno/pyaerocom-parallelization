@@ -252,7 +252,15 @@ def main():
             json_string = infile.read()
         pyaro_cfg = jsonpickle.decode(json_string)
 
-        for var in list(set(pyaro_cfg.name_map.values())):
+        if not "vars" in options:
+            # this works only if the pyaerocom and pyaro variable names are different!
+            # we might want to pass the vars from aeroval_parallelise therefore
+            # But keep this for now for command line usage
+            vars_to_process = list(set(pyaro_cfg.name_map.values()))
+        else:
+            vars_to_process = options["vars"]
+
+        for var in vars_to_process:
             # write python file
             obs_network = obsconf.name
 
