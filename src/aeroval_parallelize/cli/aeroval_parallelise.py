@@ -474,15 +474,13 @@ Please add an output directory using the -o switch."""
                     cmd_arr += queue_opts
                     for obs_net in conf_info:
                         cmd_tmp_arr = cmd_arr
-                        # only needed if there's no obsconfig file
-                        if not obs_conf_flag:
-                            static_opts = [
-                                "--vars",
-                                *conf_info[obs_net],
-                                "-o",
-                                obs_net,
-                            ]
-                            cmd_tmp_arr += static_opts
+                        static_opts = [
+                            "--vars",
+                            *conf_info[obs_net]["obs_vars"],
+                            "-o",
+                            obs_net,
+                        ]
+                        cmd_tmp_arr += static_opts
 
                         print(f"running command {' '.join(map(str, cmd_tmp_arr))}...")
                         sh_result = subprocess.run(cmd_tmp_arr, capture_output=True)
