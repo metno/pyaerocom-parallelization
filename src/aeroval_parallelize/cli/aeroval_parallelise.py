@@ -441,6 +441,9 @@ Please add an output directory using the -o switch."""
                             print(f"writing file {obs_conf_file}")
                             with open(obs_conf_file, "w", encoding="utf-8") as j:
                                 j.write(conf_info[obs_net_key]["obs_config"])
+                            # continue for pyaro based datasets for now since the caching does not work properly there
+                            # anyway
+                            continue
 
                     # cache creation is started via the command line for simplicity
                     cmd_arr = [*CACHE_CREATION_CMD]
@@ -472,23 +475,22 @@ Please add an output directory using the -o switch."""
                     else:
                         queue_opts += ["--qsub"]
                     cmd_arr += queue_opts
-                    for obs_net in conf_info:
-                        cmd_tmp_arr = cmd_arr
-                        static_opts = [
-                            "--vars",
-                            *conf_info[obs_net]["obs_vars"],
-                            "-o",
-                            obs_net,
-                        ]
-                        cmd_tmp_arr += static_opts
+                    # cmd_tmp_arr = deepcopy(cmd_arr)
+                    static_opts = [
+                        "--vars",
+                        *conf_info[obs_net_key]["obs_vars"],
+                        "-o",
+                        obs_net_key,
+                    ]
+                    cmd_arr += static_opts
 
-                        print(f"running command {' '.join(map(str, cmd_tmp_arr))}...")
-                        sh_result = subprocess.run(cmd_tmp_arr, capture_output=True)
-                        print(f"{sh_result.stdout}")
-                        if sh_result.returncode != 0:
-                            continue
-                        else:
-                            print("success...")
+                    print(f"running command {' '.join(map(str, cmd_arr))}...")
+                    sh_result = subprocess.run(cmd_arr, capture_output=True)
+                    print(f"{sh_result.stdout}")
+                    if sh_result.returncode != 0:
+                        continue
+                    else:
+                        print("success...")
 
         if options["dry_qsub"] and options["verbose"]:
             # just print the to be run files
