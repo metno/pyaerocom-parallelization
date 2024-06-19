@@ -7,6 +7,7 @@ for usage via the PPI queues
 from __future__ import annotations
 
 import argparse
+import os.path
 import subprocess
 import sys
 from pathlib import Path
@@ -21,6 +22,7 @@ from aeroval_parallelize.cache_tools import (
     TMP_DIR,
     run_queue,
     write_script,
+    write_script_pyaro,
     DEFAULT_CACHE_RAM,
     ENV_MODULE_NAME,
 )
@@ -42,6 +44,8 @@ def main():
         epilog=f"""{colors['BOLD']}Example usages:{colors['END']}
 {colors['UNDERLINE']}start cache generation serially{colors['END']}
 {script_name} --vars concpm10 concpm25 -o EEAAQeRep.v2
+{colors['UNDERLINE']}with pyaro config file{colors['END']}
+{script_name} --vars concpm10 concpm25 -o EEAAQeRep.v2 --obsconfigfile <path to picklejson file>
 
 {colors['UNDERLINE']}dry run cache generation for queue job{colors['END']}
 {script_name} --dry-qsub --vars ang4487aer od550aer -o AeronetSunV3Lev2.daily
@@ -56,6 +60,9 @@ def main():
     """,
     )
     parser.add_argument("--vars", help="variable name(s) to cache", nargs="+")
+    parser.add_argument(
+        "--obsconfigfile", help="picklejson config file for pyaro config", nargs=1
+    )
     parser.add_argument(
         "-o", "--obsnetworks", help="obs networks(s) names to cache", nargs="+"
     )
@@ -124,6 +131,13 @@ def main():
     options = {}
     if args.vars:
         options["vars"] = args.vars
+
+    if args.obsconfigfile:
+        options["obsconfigfile"] = args.obsconfigfile[0]
+        if os.path.exists(options["obsconfigfile"]):
+            with open(options["obsconfigfile"], "r") as f:
+                json_str = f.read()
+            obsconf = jsonpickle.decode(json_str)
 
     if args.printobsnetworks:
         from pyaerocom import const
@@ -232,15 +246,44 @@ def main():
         tempdir = Path(mkdtemp(dir=options["tempdir"]))
         use_module = False
 
-    for obs_network in options["obsnetworks"]:
-        for var in options["vars"]:
+    if "obsconfigfile" in options:
+        # PYARO!
+        with open(options["obsconfigfile"], "r") as infile:
+            json_string = infile.read()
+        pyaro_cfg = jsonpickle.decode(json_string)
+
+        if not "vars" in options:
+            # this works only if the pyaerocom and pyaro variable names are different!
+            # we might want to pass the vars from aeroval_parallelise therefore
+            # But keep this for now for command line usage
+            vars_to_process = list(set(pyaro_cfg.name_map.values()))
+        else:
+            vars_to_process = options["vars"]
+
+        for var in vars_to_process:
             # write python file
+            obs_network = obsconf.name
+
             outfile = tempdir.joinpath(f"pya_{rnd}_caching_{obs_network}_{var}.py")
-            write_script(
-                outfile, var=var, obsnetwork=obs_network, use_module=use_module
+            write_script_pyaro(
+                outfile,
+                var=var,
+                obsnetwork=obs_network,
+                use_module=use_module,
+                conffile=options["obsconfigfile"],
             )
             print(f"Wrote {outfile}")
             scripts_to_run.append(outfile)
+    else:
+        for obs_network in options["obsnetworks"]:
+            for var in options["vars"]:
+                # write python file
+                outfile = tempdir.joinpath(f"pya_{rnd}_caching_{obs_network}_{var}.py")
+                write_script(
+                    outfile, var=var, obsnetwork=obs_network, use_module=use_module
+                )
+                print(f"Wrote {outfile}")
+                scripts_to_run.append(outfile)
 
     if options["qsub"] or options["dry_qsub"]:
         # run via queue, either on localhost or qsub submit host
