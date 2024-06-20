@@ -38,7 +38,7 @@ QSUB_DIR = f"/lustre/storeB/users/{USER}/submission_scripts"
 QSUB_USER = USER
 # queue name
 QSUB_QUEUE_NAME = "research-r8.q,bigmem-r8.q,researchlong-r8.q"
-QSUB_SHORT_QUEUE_NAME = "researchshort-r8.q,research-r8.q,researchlong-r8.q"
+QSUB_SHORT_QUEUE_NAME = "researchshort-r8.q,research-r8.q,researchlong-r8.q,bigmem-r8.q"
 # log directory
 QSUB_LOG_DIR = "/lustre/storeB/project/aerocom/logs/aeroval_logs/"
 
