@@ -143,16 +143,6 @@ def main():
         from pyaerocom import const
 
         supported_obs_networks = [
-            const.AERONET_SUN_V2L15_AOD_DAILY_NAME,
-            const.AERONET_SUN_V2L15_AOD_ALL_POINTS_NAME,
-            const.AERONET_SUN_V2L2_AOD_DAILY_NAME,
-            const.AERONET_SUN_V2L2_AOD_ALL_POINTS_NAME,
-            const.AERONET_SUN_V2L2_SDA_DAILY_NAME,
-            const.AERONET_SUN_V2L2_SDA_ALL_POINTS_NAME,
-            const.AERONET_INV_V2L15_DAILY_NAME,
-            const.AERONET_INV_V2L15_ALL_POINTS_NAME,
-            const.AERONET_INV_V2L2_DAILY_NAME,
-            const.AERONET_INV_V2L2_ALL_POINTS_NAME,
             const.AERONET_SUN_V3L15_AOD_DAILY_NAME,
             const.AERONET_SUN_V3L15_AOD_ALL_POINTS_NAME,
             const.AERONET_SUN_V3L2_AOD_DAILY_NAME,
@@ -167,12 +157,17 @@ def main():
             const.EEA_NRT_NAME,
             const.EEA_V2_NAME,
             const.EARLINET_NAME,
-            const.MEP_NAME,
             const.AIR_NOW_NAME,
+            const.ICPFORESTS_NAME,
         ]
-        # since the IPCForest data is not in main-dev branch yet
+        # adjust to newer obs network names
         try:
-            supported_obs_networks += [const.IPCFORESTS_NAME]
+            supported_obs_networks += [const.MEP_NAME]
+        except AttributeError:
+            pass
+
+        try:
+            supported_obs_networks += [const.CNEMC_NAME]
         except AttributeError:
             pass
 
