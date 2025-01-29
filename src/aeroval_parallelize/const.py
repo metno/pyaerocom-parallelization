@@ -17,7 +17,7 @@ from uuid import uuid4
 
 DEFAULT_CFG_VAR = "CFG"
 RUN_UUID = uuid4()
-RND = randint(0, 1e9)
+RND = randint(int(0), int(1e9))
 # RND = getppid()
 HOSTNAME = gethostname()
 USER = getuser()
