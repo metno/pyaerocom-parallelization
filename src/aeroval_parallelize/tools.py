@@ -721,10 +721,10 @@ def get_config_info(
         ]["obs_vars"]
         # check each obs_cfg entry for pyaro
         # if it exists, jsonpickle the pyaro config to be passed to cache file generation
-        if "obs_config" in cfg["obs_cfg"][_obs_network]:
+        if "pyaro_config" in cfg["obs_cfg"][_obs_network]:
             var_config[cfg["obs_cfg"][_obs_network]["obs_id"]][
-                "obs_config"
-            ] = jsonpickle.encode(cfg["obs_cfg"][_obs_network]["obs_config"])
+                "pyaro_config"
+            ] = jsonpickle.encode(cfg["obs_cfg"][_obs_network]["pyaro_config"])
 
     return var_config
 
