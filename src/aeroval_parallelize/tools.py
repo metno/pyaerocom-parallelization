@@ -590,12 +590,20 @@ def combine_output(options: dict):
                             print(
                                 f"non-existing outfile for merge. Copying {_file} to {outfile}..."
                             )
-                            shutil.copy2(_file, outfile)
+                            try:
+                                shutil.copy2(_file, outfile)
+                            except FileNotFoundError:
+                                outfile.parent.mkdir(parents=True, exist_ok=True)
+                                shutil.copy2(_file, outfile)
                     else:
                         # copy file
                         outfile = out_target_dir.joinpath(cmp_file)
                         print(f"copying {_file} to {outfile}...")
-                        shutil.copy2(_file, outfile)
+                        try:
+                            shutil.copy2(_file, outfile)
+                        except FileNotFoundError:
+                            outfile.parent.mkdir(parents=True, exist_ok=True)
+                            shutil.copy2(_file, outfile)
 
             # reorder menu.json according to config initial config file (
             # webdisp_opts['var_order_menu'] and webdisp_opts['model_order_menu']
