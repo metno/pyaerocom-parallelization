@@ -180,6 +180,18 @@ def prep_files(options):
             out_cfg.pop("model_cfg", None)
             out_cfg["model_cfg"] = {}
             out_cfg["model_cfg"][_model] = cfg["model_cfg"][_model]
+            # out_cfg["plot_types"] contains a per model map plot type config
+            # unfortunately pyaerocom crashes, if the model data according to the config is not present
+            # therefore just keep the config for the current model
+            # deleting all and then recreating what we need is the easier path
+            try:
+                # not all config files might have this...
+                model_plot_types = deepcopy(out_cfg["plot_types"][_model])
+                del out_cfg["plot_types"]
+                out_cfg["plot_types"] = {}
+                out_cfg["plot_types"][_model] = model_plot_types
+            except Exception as e:
+                pass
 
             if no_superobs_flag:
                 # nearly untested due to PPI RAM limitation
