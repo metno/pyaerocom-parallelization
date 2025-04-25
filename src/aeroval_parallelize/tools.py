@@ -735,12 +735,23 @@ def get_config_info(
         except KeyError:
             pass
 
-        var_config[cfg["obs_cfg"][_obs_network]["obs_id"]] = {}
-        var_config[cfg["obs_cfg"][_obs_network]["obs_id"]]["obs_vars"] = cfg["obs_cfg"][
-            _obs_network
-        ]["obs_vars"]
+        # leave out pyaro stuff for now...
+        if "pyaro_config" in cfg["obs_cfg"][_obs_network]:
+            continue
+
+        # skip calculated obs vars
+        if 'obs_aux_requires' in cfg["obs_cfg"][_obs_network]:
+            continue
+
+        if cfg["obs_cfg"][_obs_network]["obs_id"] not in var_config:
+            var_config[cfg["obs_cfg"][_obs_network]["obs_id"]] = {}
+            var_config[cfg["obs_cfg"][_obs_network]["obs_id"]]["obs_vars"] = cfg["obs_cfg"][_obs_network]["obs_vars"]
+        else:
+            var_config[cfg["obs_cfg"][_obs_network]["obs_id"]]["obs_vars"].extend(cfg["obs_cfg"][_obs_network]["obs_vars"])
         # check each obs_cfg entry for pyaro
         # if it exists, jsonpickle the pyaro config to be passed to cache file generation
+        # disabled for now, but left in here in case we reintroduce caching for pyaro based
+        # obs networks
         if "pyaro_config" in cfg["obs_cfg"][_obs_network]:
             var_config[cfg["obs_cfg"][_obs_network]["obs_id"]][
                 "pyaro_config"
