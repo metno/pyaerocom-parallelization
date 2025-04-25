@@ -9,27 +9,19 @@ parallelisation for aeroval processing
 """
 from __future__ import annotations
 
+import importlib
 import sys
 from copy import deepcopy
 from datetime import datetime
 from fnmatch import fnmatch
-from getpass import getuser
-import importlib
 from pathlib import Path
-from random import randint
-from socket import gethostname
 from tempfile import mkdtemp
-from threading import Thread
-from uuid import uuid4
+
 import jsonpickle
-
-
 import simplejson as json
 
 from aeroval_parallelize.cache_tools import QSUB_SCRIPT_START
 from aeroval_parallelize.const import (
-    CONDA_ENV,
-    CP_COMMAND,
     JSON_RUNSCRIPT_NAME,
     QSUB_DIR,
     QSUB_HOST,
@@ -37,14 +29,9 @@ from aeroval_parallelize.const import (
     QSUB_NAME,
     QSUB_QUEUE_NAME,
     QSUB_USER,
-    REMOTE_CP_COMMAND,
     RND,
-    RUN_UUID,
-    TMP_DIR,
-    USER,
     DEFAULT_ASSEMBLY_RAM,
     DEFAULT_ANA_RAM,
-    DEFAULT_CACHE_RAM,
     ENV_MODULE_NAME,
     DEFAULT_PYTHON,
     JSON_EXT,
@@ -120,6 +107,8 @@ MERGE_EXP_FILES_TO_COMBINE = [
 MERGE_EXP_FILES_TO_EXCLUDE = []
 # the config file need to be merged and have a special name
 MERGE_EXP_CFG_FILES = ["cfg_*.json"]
+
+
 # Name of conda env to use for running the aeroval analysis
 # CONDA_ENV = "pya_para"
 
@@ -265,16 +254,16 @@ def write_obs_config(config: dict, tempdir: [Path, str], outfile: [Path, str]):
 
 
 def get_runfile_str(
-    file,
-    queue_name=QSUB_QUEUE_NAME,
-    script_name=None,
-    wd=None,
-    mail=f"{QSUB_USER}@met.no",
-    logdir=QSUB_LOG_DIR,
-    date=START_TIME,
-    module=ENV_MODULE_NAME,
-    hold_pattern=None,
-    ram=DEFAULT_ANA_RAM,
+        file,
+        queue_name=QSUB_QUEUE_NAME,
+        script_name=None,
+        wd=None,
+        mail=f"{QSUB_USER}@met.no",
+        logdir=QSUB_LOG_DIR,
+        date=START_TIME,
+        module=ENV_MODULE_NAME,
+        hold_pattern=None,
+        ram=DEFAULT_ANA_RAM,
 ) -> str:
     """create list of strings with runfile for gridengine
 
@@ -342,14 +331,14 @@ echo "starting {file} ..." >> ${{logfile}}
 
 
 def run_queue(
-    runfiles: list[Path],
-    qsub_host: str = QSUB_HOST,
-    qsub_cmd: str = QSUB_NAME,
-    qsub_dir: str = QSUB_DIR,
-    qsub_user: str = QSUB_USER,
-    qsub_queue: str = QSUB_QUEUE_NAME,
-    submit_flag: bool = False,
-    options: dict = {},
+        runfiles: list[Path],
+        qsub_host: str = QSUB_HOST,
+        qsub_cmd: str = QSUB_NAME,
+        qsub_dir: str = QSUB_DIR,
+        qsub_user: str = QSUB_USER,
+        qsub_queue: str = QSUB_QUEUE_NAME,
+        submit_flag: bool = False,
+        options: dict = {},
 ):
     """submit runfiles to the remote cluster
 
@@ -667,7 +656,7 @@ def dict_merge(dct: dict | None, merge_dct: dict):
 
 
 def match_file(
-    file: str, file_mask_array: str | list[str] = MERGE_EXP_FILES_TO_COMBINE
+        file: str, file_mask_array: str | list[str] = MERGE_EXP_FILES_TO_COMBINE
 ) -> bool:
     """small helper that matches a filename against a list if wildcards"""
     if isinstance(file_mask_array, str):
@@ -715,9 +704,9 @@ exiting now..."""
 
 
 def get_config_info(
-    config_file: str,
-    cfgvar: str,
-    cfg: dict = None,
+        config_file: str,
+        cfgvar: str,
+        cfg: dict = None,
 ) -> dict:
     """method to return the used observations and variables in formatted way
 
@@ -747,7 +736,8 @@ def get_config_info(
             var_config[cfg["obs_cfg"][_obs_network]["obs_id"]] = {}
             var_config[cfg["obs_cfg"][_obs_network]["obs_id"]]["obs_vars"] = cfg["obs_cfg"][_obs_network]["obs_vars"]
         else:
-            var_config[cfg["obs_cfg"][_obs_network]["obs_id"]]["obs_vars"].extend(cfg["obs_cfg"][_obs_network]["obs_vars"])
+            var_config[cfg["obs_cfg"][_obs_network]["obs_id"]]["obs_vars"].extend(
+                cfg["obs_cfg"][_obs_network]["obs_vars"])
         # check each obs_cfg entry for pyaro
         # if it exists, jsonpickle the pyaro config to be passed to cache file generation
         # disabled for now, but left in here in case we reintroduce caching for pyaro based
@@ -761,7 +751,7 @@ def get_config_info(
 
 
 def adjust_menujson(
-    menujson_file: str, cfg: dict = None, config_file: str = None, cfgvar: str = None
+        menujson_file: str, cfg: dict = None, config_file: str = None, cfgvar: str = None
 ) -> None:
     """helper to adjust the menu.json file according to a given aeroval config file"""
     # load aeroval config file
@@ -817,10 +807,10 @@ def adjust_menujson(
 
 
 def adjust_heatmapfile(
-    heatmap_files: list[str | Path],
-    cfg: dict = None,
-    config_file: str = None,
-    cfgvar: str = None,
+        heatmap_files: list[str | Path],
+        cfg: dict = None,
+        config_file: str = None,
+        cfgvar: str = None,
 ) -> None:
     """helper to adjust the heatmap files (files matching AEROVAL_HEATMAP_FILES_MASK)
     according to a given aeroval config file"""
@@ -878,24 +868,24 @@ def adjust_heatmapfile(
 
 
 def get_assembly_job_str(
-    out_dir: str,
-    in_dirs: list(str),
-    job_id: str = RND,
-    qsub_host: str = QSUB_HOST,
-    qsub_cmd: str = QSUB_NAME,
-    qsub_dir: str = QSUB_DIR,
-    qsub_user: str = QSUB_USER,
-    queue_name: str = QSUB_QUEUE_NAME,
-    submit_flag: bool = False,
-    options: dict = {},
-    script_name=None,
-    wd=None,
-    mail=f"{QSUB_USER}@met.no",
-    logdir=QSUB_LOG_DIR,
-    date=START_TIME,
-    module=ENV_MODULE_NAME,
-    hold_pattern=None,
-    ram=DEFAULT_ASSEMBLY_RAM,
+        out_dir: str,
+        in_dirs: list(str),
+        job_id: str = RND,
+        qsub_host: str = QSUB_HOST,
+        qsub_cmd: str = QSUB_NAME,
+        qsub_dir: str = QSUB_DIR,
+        qsub_user: str = QSUB_USER,
+        queue_name: str = QSUB_QUEUE_NAME,
+        submit_flag: bool = False,
+        options: dict = {},
+        script_name=None,
+        wd=None,
+        mail=f"{QSUB_USER}@met.no",
+        logdir=QSUB_LOG_DIR,
+        date=START_TIME,
+        module=ENV_MODULE_NAME,
+        hold_pattern=None,
+        ram=DEFAULT_ASSEMBLY_RAM,
 ):
     """method to create an assembly job in the PPI queue
 
@@ -959,10 +949,10 @@ echo "starting {assembly_cmd_str} ..." >> ${{logfile}}
 
 
 def adjust_hm_ts_file(
-    ts_files: list[str | Path],
-    cfg: dict = None,
-    config_file: str = None,
-    cfgvar: str = None,
+        ts_files: list[str | Path],
+        cfg: dict = None,
+        config_file: str = None,
+        cfgvar: str = None,
 ) -> None:
     """helper to adjust the hm/ts/*.json files according to a given aeroval config file"""
     # load aeroval config file
@@ -1019,14 +1009,14 @@ def adjust_hm_ts_file(
 
 
 def create_order_job(
-    job_id: str = RND,
-    qsub_host: str = QSUB_HOST,
-    qsub_cmd: str = QSUB_NAME,
-    qsub_dir: str = QSUB_DIR,
-    qsub_user: str = QSUB_USER,
-    qsub_queue: str = QSUB_QUEUE_NAME,
-    submit_flag: bool = False,
-    options: dict = {},
+        job_id: str = RND,
+        qsub_host: str = QSUB_HOST,
+        qsub_cmd: str = QSUB_NAME,
+        qsub_dir: str = QSUB_DIR,
+        qsub_user: str = QSUB_USER,
+        qsub_queue: str = QSUB_QUEUE_NAME,
+        submit_flag: bool = False,
+        options: dict = {},
 ):
     """method to create a reorder job in the PPI queue
 
@@ -1035,14 +1025,14 @@ def create_order_job(
 
 
 def run_queue_simple(
-    runfiles: list[Path],
-    qsub_host: str = QSUB_HOST,
-    qsub_cmd: str = QSUB_NAME,
-    qsub_dir: str = QSUB_DIR,
-    qsub_user: str = QSUB_USER,
-    qsub_queue: str = QSUB_QUEUE_NAME,
-    submit_flag: bool = False,
-    options: dict = {},
+        runfiles: list[Path],
+        qsub_host: str = QSUB_HOST,
+        qsub_cmd: str = QSUB_NAME,
+        qsub_dir: str = QSUB_DIR,
+        qsub_user: str = QSUB_USER,
+        qsub_queue: str = QSUB_QUEUE_NAME,
+        submit_flag: bool = False,
+        options: dict = {},
 ):
     """submit already prepared runfiles to the remote cluster
 
