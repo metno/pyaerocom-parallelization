@@ -548,8 +548,8 @@ Please add an output directory using the -o switch."""
                 reorder_cmd_arr = [
                     "aeroval_parallelize",
                     "--adjustall",
-                    f"{aeroval_config_file}",
-                    menu_json_file,
+                    f"'{aeroval_config_file}'",
+                    f"'{menu_json_file}'",
                 ]
                 reorder_cmd_str = " ".join(map(str, reorder_cmd_arr))
 
