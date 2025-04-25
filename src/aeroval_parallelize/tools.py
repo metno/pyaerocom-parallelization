@@ -898,13 +898,13 @@ def get_assembly_job_str(
 
     # assembly command line
     # aeroval_parallelize -c -o <output directory> <input directories>
-    in_dir_str = " ".join(map(str, in_dirs))
+    in_dir_str = "' '".join(map(str, in_dirs))
     assembly_cmd_arr = [
         "aeroval_parallelize",
         "-c",
         "-o",
-        f"{out_dir}",
-        f"{in_dir_str}",
+        f"'{out_dir}'",
+        f"'{in_dir_str}'",
     ]
     assembly_cmd_str = " ".join(map(str, assembly_cmd_arr))
 

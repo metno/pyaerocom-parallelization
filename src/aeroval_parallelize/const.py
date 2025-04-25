@@ -65,7 +65,7 @@ DEFAULT_ASSEMBLY_RAM = 10
 # DEFAULT_MODULE_NAME = "/modules/MET/rhel8/user-modules/fou-kl/aerotools/aerotools"
 
 # depending on which module we use, we might need to change the python interpreter
-# therefore make it easy to changed that
+# therefore make it easy to change that
 DEFAULT_PYTHON = "python"
 
 JSON_EXT = ".json"
