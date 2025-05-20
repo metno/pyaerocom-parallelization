@@ -22,6 +22,7 @@ from tempfile import mkdtemp
 from threading import Thread
 from uuid import uuid4
 import jsonpickle
+import os
 
 
 import simplejson as json
@@ -173,7 +174,7 @@ def prep_files(options):
                 pass
 
         # only parallelise model for now since the PPI cluster is RAM limited
-        no_superobs_flag = False
+        # no_superobs_flag = False
 
         for _model in cfg["model_cfg"]:
             out_cfg = deepcopy(cfg)
@@ -196,6 +197,7 @@ def prep_files(options):
             if no_superobs_flag:
                 # nearly untested due to PPI RAM limitation
                 out_cfg.pop("obs_cfg", None)
+
                 for _obs_network in cfg["obs_cfg"]:
                     # cache file generation works with pyaerocom's obs network names
                     # and not the one of aeroval (those used in the web interface)
@@ -218,15 +220,17 @@ def prep_files(options):
                     # the parallelisation is based on obs network for now only, while the cache
                     # generation runs the variables in parallel already
                     cache_job_id_mask[outfile] = f"{QSUB_SCRIPT_START}{pya_obsid}*"
-                    print(f"writing file {outfile}")
-                    json_string = jsonpickle.encode(out_cfg)
-                    with open(outfile, "w", encoding="utf-8") as j:
-                        j.write(json_string)
-                        # json.dump(out_cfg, j, ensure_ascii=False, indent=4)
+                    if not os.path.exists(outfile):
+                        print(f"writing file {outfile}")
+                        json_string = jsonpickle.encode(out_cfg)
+                        with open(outfile, "w", encoding="utf-8") as j:
+                            j.write(json_string)
+                            # json.dump(out_cfg, j, ensure_ascii=False, indent=4)
+
+                        runfiles.append(outfile)
+                        if options["verbose"]:
+                            print(out_cfg)
                     dir_idx += 1
-                    runfiles.append(outfile)
-                    if options["verbose"]:
-                        print(out_cfg)
             else:
                 # adjust json_basedir and coldata_basedir so that the different runs
                 # do not influence each other
@@ -719,9 +723,9 @@ def get_config_info(
     cfgvar: str,
     cfg: dict = None,
 ) -> dict:
-    """method to return the used observations and variables in formatted way
+    """method to return the used observations and variables in a formatted way
 
-    returns a dict with the obs network name as key and the corresponding variables values
+    returns a dict with the obs network name as key and the corresponding variables as values
     """
 
     if not cfg:

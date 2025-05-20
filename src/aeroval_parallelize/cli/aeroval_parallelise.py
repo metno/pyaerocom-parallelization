@@ -9,6 +9,8 @@ command line interface for parallelisation for aeroval processing
 """
 from __future__ import annotations
 
+import logging
+
 import argparse
 import os
 import subprocess
@@ -55,7 +57,7 @@ from aeroval_parallelize.tools import (  # CONDA_ENV,; JSON_RUNSCRIPT,; QSUB_HOS
 )
 
 CACHE_CREATION_CMD = ["pyaerocom_cachegen"]
-RUN_PYARO_CACHING = False
+RUN_PYARO_CACHING = True
 
 
 def main():
@@ -371,7 +373,7 @@ Please add an output directory using the -o switch."""
 
     if options["extract_obsconfigfile"]:
         # just create the obsconfig files and exit
-        pass
+        raise NotImplementedError
 
     if (
         not options["combinedirs"]
@@ -434,18 +436,23 @@ Please add an output directory using the -o switch."""
                             )
 
                         # create pyaro config, if necessary
-                        if "obs_config" in conf_info[obs_net_key]:
+                        if "pyaro_config" in conf_info[obs_net_key]:
                             obs_conf_flag = RUN_PYARO_CACHING
                             if obs_conf_flag:
                                 obs_conf_file = Path(tempdir).joinpath(
                                     f"pya_{rnd}_caching_{obs_net_key}{PICKLE_JSON_EXT}"
                                 )
-                                print(f"writing file {obs_conf_file}")
-                                with open(obs_conf_file, "w", encoding="utf-8") as j:
-                                    j.write(conf_info[obs_net_key]["obs_config"])
-                                # continue for pyaro based datasets for now since the caching does not work properly there
-                                # anyway
-                            continue
+                                if os.path.exists(obs_conf_file):
+                                    continue
+                                else:
+                                    print(f"writing file {obs_conf_file}")
+                                    with open(
+                                        obs_conf_file, "w", encoding="utf-8"
+                                    ) as j:
+                                        j.write(conf_info[obs_net_key]["pyaro_config"])
+                        else:
+                            obs_conf_flag = False
+                            obs_conf_file = None
 
                     # cache creation is started via the command line for simplicity
                     cmd_arr = [*CACHE_CREATION_CMD]

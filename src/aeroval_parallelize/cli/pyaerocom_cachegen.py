@@ -267,7 +267,7 @@ def main():
                 use_module=use_module,
                 conffile=options["obsconfigfile"],
             )
-            print(f"Wrote {outfile}")
+            print(f"Wrote pyaro {outfile}")
             scripts_to_run.append(outfile)
     else:
         for obs_network in options["obsnetworks"]:
