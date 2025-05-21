@@ -162,7 +162,7 @@ def get_runfile_str_arr_module(
 logdir="{logdir}/"
 date="{date}"
 logfile="${{logdir}}/${{USER}}.${{date}}.${{JOB_NAME}}.${{JOB_ID}}_log.txt"
-export PYAEROCOM_LOG_FILE="${{logdir}}/${{USER}}.${{date}}.${{JOB_NAME}}.${{JOB_ID}}_log.txt"
+export PYAEROCOM_LOG_FILE="${{logdir}}/${{USER}}.${{date}}.${{JOB_NAME}}.${{JOB_ID}}_pyalog.txt"
 
 echo "Got $NSLOTS slots for job $SGE_TASK_ID." >> ${{logfile}}
 module load {module} >> ${{logfile}} 2>&1

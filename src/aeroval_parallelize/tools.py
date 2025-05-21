@@ -337,7 +337,7 @@ module load {module} >> ${{logfile}} 2>&1
 echo "{DEFAULT_PYTHON} --version" >> ${{logfile}} 2>&1
 {DEFAULT_PYTHON} --version >> ${{logfile}} 2>&1
 pwd >> ${{logfile}} 2>&1
-export PYAEROCOM_LOG_FILE=${{logfile}}
+export PYAEROCOM_LOG_FILE="${{logdir}}/${{USER}}.${{date}}.${{JOB_NAME}}.${{JOB_ID}}_pyalog.txt"
 echo "starting {file} ..." >> ${{logfile}}
 {str(JSON_RUNSCRIPT)} {str(file)}
 
