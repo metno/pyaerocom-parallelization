@@ -51,6 +51,7 @@ from aeroval_parallelize.const import (
     JSON_EXT,
     PICKLE_JSON_EXT,
 )
+from pyaerocom.io.pyaro.pyaro_config import PyaroConfig
 
 # DEFAULT_CFG_VAR = "CFG"
 # RUN_UUID = uuid4()
@@ -746,9 +747,14 @@ def get_config_info(
         # check each obs_cfg entry for pyaro
         # if it exists, jsonpickle the pyaro config to be passed to cache file generation
         if "pyaro_config" in cfg["obs_cfg"][_obs_network]:
-            var_config[cfg["obs_cfg"][_obs_network]["obs_id"]][
-                "pyaro_config"
-            ] = jsonpickle.encode(cfg["obs_cfg"][_obs_network]["pyaro_config"])
+            try:
+                var_config[cfg["obs_cfg"][_obs_network]["obs_id"]][
+                    "pyaro_config"
+                ] = PyaroConfig.from_dict(cfg["obs_cfg"][_obs_network]["pyaro_config"])
+            except Exception:
+                var_config[cfg["obs_cfg"][_obs_network]["obs_id"]][
+                    "pyaro_config"
+                ] = cfg["obs_cfg"][_obs_network]["pyaro_config"]
 
     return var_config
 

@@ -9,6 +9,7 @@ command line interface for parallelisation for aeroval processing
 """
 from __future__ import annotations
 
+import jsonpickle
 import logging
 
 import argparse
@@ -446,10 +447,13 @@ Please add an output directory using the -o switch."""
                                     continue
                                 else:
                                     print(f"writing file {obs_conf_file}")
+                                    json_string = jsonpickle.encode(
+                                        conf_info[obs_net_key]["pyaro_config"]
+                                    )
                                     with open(
                                         obs_conf_file, "w", encoding="utf-8"
                                     ) as j:
-                                        j.write(conf_info[obs_net_key]["pyaro_config"])
+                                        j.write(json_string)
                         else:
                             obs_conf_flag = False
                             obs_conf_file = None
