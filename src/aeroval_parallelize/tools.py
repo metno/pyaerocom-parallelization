@@ -22,6 +22,7 @@ from tempfile import mkdtemp
 from threading import Thread
 from uuid import uuid4
 import jsonpickle
+import os
 
 
 import simplejson as json
@@ -50,6 +51,7 @@ from aeroval_parallelize.const import (
     JSON_EXT,
     PICKLE_JSON_EXT,
 )
+from pyaerocom.io.pyaro.pyaro_config import PyaroConfig
 
 # DEFAULT_CFG_VAR = "CFG"
 # RUN_UUID = uuid4()
@@ -173,8 +175,6 @@ def prep_files(options):
                 pass
 
         # only parallelise model for now since the PPI cluster is RAM limited
-        no_superobs_flag = False
-
         for _model in cfg["model_cfg"]:
             out_cfg = deepcopy(cfg)
             out_cfg.pop("model_cfg", None)
@@ -194,8 +194,9 @@ def prep_files(options):
                 pass
 
             if no_superobs_flag:
-                # nearly untested due to PPI RAM limitation
+                # No superobs, also parallelize per obes network
                 out_cfg.pop("obs_cfg", None)
+
                 for _obs_network in cfg["obs_cfg"]:
                     # cache file generation works with pyaerocom's obs network names
                     # and not the one of aeroval (those used in the web interface)
@@ -204,13 +205,13 @@ def prep_files(options):
                     out_cfg["obs_cfg"][_obs_network] = cfg["obs_cfg"][_obs_network]
                     # adjust json_basedir and coldata_basedir so that the different runs
                     # do not influence each other
-                    out_cfg[
-                        "json_basedir"
-                    ] = f"{cfg['json_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
+                    out_cfg["json_basedir"] = (
+                        f"{cfg['json_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
+                    )
                     json_run_dirs.append(out_cfg["json_basedir"])
-                    out_cfg[
-                        "coldata_basedir"
-                    ] = f"{cfg['coldata_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
+                    out_cfg["coldata_basedir"] = (
+                        f"{cfg['coldata_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
+                    )
                     cfg_file = Path(_file).stem
                     outfile = Path(tempdir).joinpath(
                         f"{cfg_file}_{_model}_{_obs_network}{PICKLE_JSON_EXT}"
@@ -218,26 +219,28 @@ def prep_files(options):
                     # the parallelisation is based on obs network for now only, while the cache
                     # generation runs the variables in parallel already
                     cache_job_id_mask[outfile] = f"{QSUB_SCRIPT_START}{pya_obsid}*"
-                    print(f"writing file {outfile}")
-                    json_string = jsonpickle.encode(out_cfg)
-                    with open(outfile, "w", encoding="utf-8") as j:
-                        j.write(json_string)
-                        # json.dump(out_cfg, j, ensure_ascii=False, indent=4)
+                    if not os.path.exists(outfile):
+                        print(f"writing file {outfile}")
+                        json_string = jsonpickle.encode(out_cfg)
+                        with open(outfile, "w", encoding="utf-8") as j:
+                            j.write(json_string)
+                            # json.dump(out_cfg, j, ensure_ascii=False, indent=4)
+
+                        runfiles.append(outfile)
+                        if options["verbose"]:
+                            print(out_cfg)
                     dir_idx += 1
-                    runfiles.append(outfile)
-                    if options["verbose"]:
-                        print(out_cfg)
             else:
                 # adjust json_basedir and coldata_basedir so that the different runs
                 # do not influence each other
                 _obs_network = "allobs"
-                out_cfg[
-                    "json_basedir"
-                ] = f"{cfg['json_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
+                out_cfg["json_basedir"] = (
+                    f"{cfg['json_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
+                )
                 json_run_dirs.append(out_cfg["json_basedir"])
-                out_cfg[
-                    "coldata_basedir"
-                ] = f"{cfg['coldata_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
+                out_cfg["coldata_basedir"] = (
+                    f"{cfg['coldata_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
+                )
                 cfg_file = Path(_file).stem
                 outfile = Path(tempdir).joinpath(
                     f"{cfg_file}_{_model}_{_obs_network}{PICKLE_JSON_EXT}"
@@ -333,7 +336,7 @@ module load {module} >> ${{logfile}} 2>&1
 echo "{DEFAULT_PYTHON} --version" >> ${{logfile}} 2>&1
 {DEFAULT_PYTHON} --version >> ${{logfile}} 2>&1
 pwd >> ${{logfile}} 2>&1
-export PYAEROCOM_LOG_FILE=${{logfile}}
+export PYAEROCOM_LOG_FILE="${{logdir}}/${{USER}}.${{date}}.${{JOB_NAME}}.${{JOB_ID}}_pyalog.txt"
 echo "starting {file} ..." >> ${{logfile}}
 {str(JSON_RUNSCRIPT)} {str(file)}
 
@@ -719,9 +722,9 @@ def get_config_info(
     cfgvar: str,
     cfg: dict = None,
 ) -> dict:
-    """method to return the used observations and variables in formatted way
+    """method to return the used observations and variables in a formatted way
 
-    returns a dict with the obs network name as key and the corresponding variables values
+    returns a dict with the obs network name as key and the corresponding variables as values
     """
 
     if not cfg:
@@ -742,9 +745,14 @@ def get_config_info(
         # check each obs_cfg entry for pyaro
         # if it exists, jsonpickle the pyaro config to be passed to cache file generation
         if "pyaro_config" in cfg["obs_cfg"][_obs_network]:
-            var_config[cfg["obs_cfg"][_obs_network]["obs_id"]][
-                "pyaro_config"
-            ] = jsonpickle.encode(cfg["obs_cfg"][_obs_network]["pyaro_config"])
+            try:
+                var_config[cfg["obs_cfg"][_obs_network]["obs_id"]]["pyaro_config"] = (
+                    PyaroConfig.from_dict(cfg["obs_cfg"][_obs_network]["pyaro_config"])
+                )
+            except Exception:
+                var_config[cfg["obs_cfg"][_obs_network]["obs_id"]]["pyaro_config"] = (
+                    cfg["obs_cfg"][_obs_network]["pyaro_config"]
+                )
 
     return var_config
 

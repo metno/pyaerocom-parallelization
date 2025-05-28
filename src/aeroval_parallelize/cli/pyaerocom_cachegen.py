@@ -26,6 +26,7 @@ from aeroval_parallelize.cache_tools import (
     DEFAULT_CACHE_RAM,
     ENV_MODULE_NAME,
 )
+from pyaerocom.io.pyaro.pyaro_config import PyaroConfig
 
 
 def main():
@@ -138,6 +139,8 @@ def main():
             with open(options["obsconfigfile"], "r") as f:
                 json_str = f.read()
             obsconf = jsonpickle.decode(json_str)
+            if isinstance(obsconf) != PyaroConfig:
+                obsconf = PyaroConfig.from_dict(obsconf)
 
     if args.printobsnetworks:
         from pyaerocom import const
@@ -242,16 +245,11 @@ def main():
         use_module = False
 
     if "obsconfigfile" in options:
-        # PYARO!
-        with open(options["obsconfigfile"], "r") as infile:
-            json_string = infile.read()
-        pyaro_cfg = jsonpickle.decode(json_string)
-
         if not "vars" in options:
             # this works only if the pyaerocom and pyaro variable names are different!
             # we might want to pass the vars from aeroval_parallelise therefore
             # But keep this for now for command line usage
-            vars_to_process = list(set(pyaro_cfg.name_map.values()))
+            vars_to_process = list(set(obsconf.name_map.values()))
         else:
             vars_to_process = options["vars"]
 
@@ -267,7 +265,7 @@ def main():
                 use_module=use_module,
                 conffile=options["obsconfigfile"],
             )
-            print(f"Wrote {outfile}")
+            print(f"Wrote pyaro {outfile}")
             scripts_to_run.append(outfile)
     else:
         for obs_network in options["obsnetworks"]:
