@@ -175,8 +175,6 @@ def prep_files(options):
                 pass
 
         # only parallelise model for now since the PPI cluster is RAM limited
-        # no_superobs_flag = False
-
         for _model in cfg["model_cfg"]:
             out_cfg = deepcopy(cfg)
             out_cfg.pop("model_cfg", None)
@@ -196,7 +194,7 @@ def prep_files(options):
                 pass
 
             if no_superobs_flag:
-                # nearly untested due to PPI RAM limitation
+                # No superobs, also parallelize per obes network
                 out_cfg.pop("obs_cfg", None)
 
                 for _obs_network in cfg["obs_cfg"]:

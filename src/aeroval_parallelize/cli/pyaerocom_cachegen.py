@@ -245,11 +245,6 @@ def main():
         use_module = False
 
     if "obsconfigfile" in options:
-        # PYARO!
-        # with open(options["obsconfigfile"], "r") as infile:
-        #     json_string = infile.read()
-        # pyaro_cfg = jsonpickle.decode(json_string)
-
         if not "vars" in options:
             # this works only if the pyaerocom and pyaro variable names are different!
             # we might want to pass the vars from aeroval_parallelise therefore
