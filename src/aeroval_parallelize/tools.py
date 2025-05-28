@@ -207,13 +207,13 @@ def prep_files(options):
                     out_cfg["obs_cfg"][_obs_network] = cfg["obs_cfg"][_obs_network]
                     # adjust json_basedir and coldata_basedir so that the different runs
                     # do not influence each other
-                    out_cfg[
-                        "json_basedir"
-                    ] = f"{cfg['json_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
+                    out_cfg["json_basedir"] = (
+                        f"{cfg['json_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
+                    )
                     json_run_dirs.append(out_cfg["json_basedir"])
-                    out_cfg[
-                        "coldata_basedir"
-                    ] = f"{cfg['coldata_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
+                    out_cfg["coldata_basedir"] = (
+                        f"{cfg['coldata_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
+                    )
                     cfg_file = Path(_file).stem
                     outfile = Path(tempdir).joinpath(
                         f"{cfg_file}_{_model}_{_obs_network}{PICKLE_JSON_EXT}"
@@ -236,13 +236,13 @@ def prep_files(options):
                 # adjust json_basedir and coldata_basedir so that the different runs
                 # do not influence each other
                 _obs_network = "allobs"
-                out_cfg[
-                    "json_basedir"
-                ] = f"{cfg['json_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
+                out_cfg["json_basedir"] = (
+                    f"{cfg['json_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
+                )
                 json_run_dirs.append(out_cfg["json_basedir"])
-                out_cfg[
-                    "coldata_basedir"
-                ] = f"{cfg['coldata_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
+                out_cfg["coldata_basedir"] = (
+                    f"{cfg['coldata_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
+                )
                 cfg_file = Path(_file).stem
                 outfile = Path(tempdir).joinpath(
                     f"{cfg_file}_{_model}_{_obs_network}{PICKLE_JSON_EXT}"
@@ -748,13 +748,13 @@ def get_config_info(
         # if it exists, jsonpickle the pyaro config to be passed to cache file generation
         if "pyaro_config" in cfg["obs_cfg"][_obs_network]:
             try:
-                var_config[cfg["obs_cfg"][_obs_network]["obs_id"]][
-                    "pyaro_config"
-                ] = PyaroConfig.from_dict(cfg["obs_cfg"][_obs_network]["pyaro_config"])
+                var_config[cfg["obs_cfg"][_obs_network]["obs_id"]]["pyaro_config"] = (
+                    PyaroConfig.from_dict(cfg["obs_cfg"][_obs_network]["pyaro_config"])
+                )
             except Exception:
-                var_config[cfg["obs_cfg"][_obs_network]["obs_id"]][
-                    "pyaro_config"
-                ] = cfg["obs_cfg"][_obs_network]["pyaro_config"]
+                var_config[cfg["obs_cfg"][_obs_network]["obs_id"]]["pyaro_config"] = (
+                    cfg["obs_cfg"][_obs_network]["pyaro_config"]
+                )
 
     return var_config
 
