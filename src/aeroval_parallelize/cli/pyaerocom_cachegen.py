@@ -139,7 +139,7 @@ def main():
             with open(options["obsconfigfile"], "r") as f:
                 json_str = f.read()
             obsconf = jsonpickle.decode(json_str)
-            if isinstance(obsconf) != PyaroConfig:
+            if isinstance(obsconf, PyaroConfig):
                 obsconf = PyaroConfig.from_dict(obsconf)
 
     if args.printobsnetworks:
