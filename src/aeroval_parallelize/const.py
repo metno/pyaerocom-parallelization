@@ -12,6 +12,7 @@ from getpass import getuser
 from random import randint
 from socket import gethostname
 from uuid import uuid4
+from os import environ
 
 # from os import getppid
 
@@ -23,24 +24,34 @@ HOSTNAME = gethostname()
 USER = getuser()
 TMP_DIR = "/tmp"
 
+DEFAULT_STORE = "B"
+STORE = environ.get("PPIROOM", DEFAULT_STORE)
+
 JSON_RUNSCRIPT_NAME = "aeroval_run_json_cfg"
 # qsub binary
 # QSUB_NAME = "/usr/bin/qsub"
 QSUB_NAME = "/opt/sge/bin/lx-amd64/qsub"
 # qsub submission host
-QSUB_HOST = "ppi-r8login-b1.int.met.no"
+if STORE == "B":
+    QSUB_HOST = "ppi-r8login-b1.int.met.no"
+    QSUB_QUEUE_NAME = "research-r8.q,bigmem-r8.q,researchlong-r8.q"
+    QSUB_SHORT_QUEUE_NAME = "researchshort-r8.q,research-r8.q,researchlong-r8.q,bigmem-r8.q"
+else:
+    # the last time storeB was down, only the bigmem-r8.q was available from storeA
+    QSUB_HOST = "ppi-r8login-a1.int.met.no"
+    QSUB_QUEUE_NAME = "bigmem-r8.q"
+    QSUB_SHORT_QUEUE_NAME = "bigmem-r8.q"
+
 # directory, where the files will bew transferred before they are run
 # Needs to be on Lustre or home since /tmp is not shared between machines
 # QSUB_DIR = f"/lustre/storeA/users/{USER}/submission_scripts"
-QSUB_DIR = f"/lustre/storeB/users/{USER}/submission_scripts"
+QSUB_DIR = f"/lustre/store{STORE}/users/{USER}/submission_scripts"
 
 # user name on the qsub host
 QSUB_USER = USER
 # queue name
-QSUB_QUEUE_NAME = "research-r8.q,bigmem-r8.q,researchlong-r8.q"
-QSUB_SHORT_QUEUE_NAME = "researchshort-r8.q,research-r8.q,researchlong-r8.q,bigmem-r8.q"
 # log directory
-QSUB_LOG_DIR = "/lustre/storeB/project/aerocom/logs/aeroval_logs/"
+QSUB_LOG_DIR = f"/lustre/store{STORE}/project/aerocom/logs/aeroval_logs/"
 
 # some copy constants
 REMOTE_CP_COMMAND = ["scp", "-v"]
