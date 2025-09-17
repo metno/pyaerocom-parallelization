@@ -205,13 +205,16 @@ def prep_files(options):
                     out_cfg["obs_cfg"][_obs_network] = cfg["obs_cfg"][_obs_network]
                     # adjust json_basedir and coldata_basedir so that the different runs
                     # do not influence each other
-                    out_cfg["json_basedir"] = (
-                        f"{cfg['json_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
-                    )
+                    # out_cfg["json_basedir"] = (
+                    #     f"{cfg['json_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
+                    # )
+                    out_cfg["json_basedir"] = cfg['json_basedir']
+
                     json_run_dirs.append(out_cfg["json_basedir"])
-                    out_cfg["coldata_basedir"] = (
-                        f"{cfg['coldata_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
-                    )
+                    out_cfg["coldata_basedir"] = cfg['coldata_basedir']
+                    # out_cfg["coldata_basedir"] = (
+                    #     f"{cfg['coldata_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
+                    # )
                     cfg_file = Path(_file).stem
                     outfile = Path(tempdir).joinpath(
                         f"{cfg_file}_{_model}_{_obs_network}{PICKLE_JSON_EXT}"
@@ -234,13 +237,15 @@ def prep_files(options):
                 # adjust json_basedir and coldata_basedir so that the different runs
                 # do not influence each other
                 _obs_network = "allobs"
-                out_cfg["json_basedir"] = (
-                    f"{cfg['json_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
-                )
+                # out_cfg["json_basedir"] = (
+                #     f"{cfg['json_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
+                # )
+                out_cfg["json_basedir"]
                 json_run_dirs.append(out_cfg["json_basedir"])
-                out_cfg["coldata_basedir"] = (
-                    f"{cfg['coldata_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
-                )
+                out_cfg["coldata_basedir"] = cfg['coldata_basedir']
+                # out_cfg["coldata_basedir"] = (
+                #     f"{cfg['coldata_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
+                # )
                 cfg_file = Path(_file).stem
                 outfile = Path(tempdir).joinpath(
                     f"{cfg_file}_{_model}_{_obs_network}{PICKLE_JSON_EXT}"
