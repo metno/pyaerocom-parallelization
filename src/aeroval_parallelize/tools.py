@@ -335,12 +335,14 @@ def get_runfile_str(
     runfile_str += f"""
 logdir="{logdir}/"
 date="{date}"
+
 logfile="${{logdir}}/${{USER}}.${{date}}.${{JOB_NAME}}.${{JOB_ID}}_log.txt"
 echo "Got $NSLOTS slots for job $SGE_TASK_ID." >> ${{logfile}}
 module load {module} >> ${{logfile}} 2>&1
 echo "{DEFAULT_PYTHON} --version" >> ${{logfile}} 2>&1
 {DEFAULT_PYTHON} --version >> ${{logfile}} 2>&1
 pwd >> ${{logfile}} 2>&1
+export AVDB_USE_LOCKING=1
 export PYAEROCOM_LOG_FILE="${{logdir}}/${{USER}}.${{date}}.${{JOB_NAME}}.${{JOB_ID}}_pyalog.txt"
 echo "starting {file} ..." >> ${{logfile}}
 {str(JSON_RUNSCRIPT)} {str(file)}
