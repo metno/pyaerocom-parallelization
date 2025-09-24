@@ -208,10 +208,9 @@ def prep_files(options):
                     # out_cfg["json_basedir"] = (
                     #     f"{cfg['json_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
                     # )
-                    out_cfg["json_basedir"] = cfg['json_basedir']
-
+                    out_cfg["json_basedir"] = cfg["json_basedir"]
                     json_run_dirs.append(out_cfg["json_basedir"])
-                    out_cfg["coldata_basedir"] = cfg['coldata_basedir']
+                    out_cfg["coldata_basedir"] = cfg["coldata_basedir"]
                     # out_cfg["coldata_basedir"] = (
                     #     f"{cfg['coldata_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
                     # )
@@ -240,9 +239,10 @@ def prep_files(options):
                 # out_cfg["json_basedir"] = (
                 #     f"{cfg['json_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
                 # )
-                out_cfg["json_basedir"]
+                # out_cfg["json_basedir"]
+                out_cfg["json_basedir"] = cfg["json_basedir"]
                 json_run_dirs.append(out_cfg["json_basedir"])
-                out_cfg["coldata_basedir"] = cfg['coldata_basedir']
+                out_cfg["coldata_basedir"] = cfg["coldata_basedir"]
                 # out_cfg["coldata_basedir"] = (
                 #     f"{cfg['coldata_basedir']}/{Path(tempdir).parts[-1]}.{dir_idx:04d}"
                 # )
@@ -911,17 +911,6 @@ def get_assembly_job_str(
 
     # assembly command line
     # aeroval_parallelize -c -o <output directory> <input directories>
-    in_dir_str = "' '".join(map(str, in_dirs))
-    assembly_cmd_arr = [
-        "aeroval_parallelize",
-        "-c",
-        "-o",
-        f"'{out_dir}'",
-        f"'{in_dir_str}'",
-    ]
-    assembly_cmd_str = " ".join(map(str, assembly_cmd_arr))
-
-    menu_json_file = Path.joinpath(Path(out_dir), "menu.json")
 
     runfile_str = f"""#!/bin/bash -l
 #$ -S /bin/bash
@@ -952,10 +941,25 @@ module load {module} >> ${{logfile}} 2>&1
 echo "{DEFAULT_PYTHON} --version" >> ${{logfile}} 2>&1
 {DEFAULT_PYTHON} --version >> ${{logfile}} 2>&1
 pwd >> ${{logfile}} 2>&1
-echo "starting {assembly_cmd_str} ..." >> ${{logfile}}
-{assembly_cmd_str} >> ${{logfile}} 2>&1
-
 """
+
+    tmp = list(set(in_dirs))
+    if len(tmp) > 1:
+        in_dir_str = "' '".join(map(str, in_dirs))
+        assembly_cmd_arr = [
+            "aeroval_parallelize",
+            "-c",
+            "-o",
+            f"'{out_dir}'",
+            f"'{in_dir_str}'",
+        ]
+        assembly_cmd_str = " ".join(map(str, assembly_cmd_arr))
+        runfile_str += f"""
+echo "starting {assembly_cmd_str} ..." >> ${{logfile}}
+{assembly_cmd_str} >> ${{logfile}} 2 > & 1
+"""
+
+        menu_json_file = Path.joinpath(Path(out_dir), "menu.json")
 
     return runfile_str
 
