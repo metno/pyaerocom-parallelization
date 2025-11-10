@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyaerocom_parallelization"
-version = "0.6.7"
+version = "0.7.0"
 authors = [{ name = "MET Norway" }]
 description = "run pyaerocom aeroval tasks in parallel on the Met Norway PPI infrastructure"
 readme = "README.md"
@@ -13,6 +13,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
     "Operating System :: OS Independent",
     "Development Status :: 3 - Alpha",
