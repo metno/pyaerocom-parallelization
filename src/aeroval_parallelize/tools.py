@@ -110,6 +110,7 @@ AEROVAL_HEATMAP_TS_FILES_MASK = [
 
 MERGE_EXP_FILES_TO_COMBINE = [
     "ts/*.json",
+    "profiles/*.json",
     *AEROVAL_HEATMAP_TS_FILES_MASK,
     "menu.json",
     "ranges.json",
